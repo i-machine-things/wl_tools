@@ -78,7 +78,12 @@ fi
 # Step 3: Install Python dependencies
 print_header "Step 3: Installing Python Dependencies"
 print_info "Installing requests library..."
-pip3 install requests
+if command -v apt-get &> /dev/null; then
+    sudo apt-get install -y python3-requests 
+else
+    pip3 install requests
+fi
+
 print_success "Python dependencies installed"
 
 # Step 4: Configure API credentials
