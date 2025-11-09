@@ -1,0 +1,15 @@
+{
+    "api":{
+        "key":"YOUR_API_KEY",
+        "secret":"YOUR_API_SECRET",
+        "stationId":"YOUR_STATION_ID"
+    },
+
+    "email":{
+        "sender_email": "example@gmail.com",
+        "sender_password": "app-specific-password",
+        "recipient_email": ["example1@gmail.com", "example2@gmail.com"],
+        "smtp_server": "smtp.gmail.com",
+        "smtp_port": 587
+    }    
+}
