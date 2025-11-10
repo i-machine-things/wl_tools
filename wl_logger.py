@@ -27,6 +27,7 @@ set poll interval useing crontab -e
 0 9 * * * /usr/bin/python3 /path/to/script.py
 """
 # Configuration
+now = datetime.now()
 
 with open(os.path.join(os.path.dirname(__file__), "config.json"), "r") as f:
     config = json.load(f)
@@ -34,8 +35,8 @@ with open(os.path.join(os.path.dirname(__file__), "config.json"), "r") as f:
 API_KEY = config["api"]["key"]
 API_SECRET = config["api"]["secret"]
 STATION_ID = config["api"]["stationId"]
-LOG_FILE = os.path.join(os.path.dirname(__file__), "weather_data.csv")
-JSON_LOG = os.path.join(os.path.dirname(__file__), "weather_data.json")
+LOG_FILE = os.path.join(os.path.dirname(__file__), 'LOGS', f'weather_data_{now.strftime("%b_%Y")}.csv')
+JSON_LOG = os.path.join(os.path.dirname(__file__), 'LOGS', f'weather_data_{now.strftime("%b_%Y")}.json')
 MAX_RETRIES = 3
 RETRY_DELAY = 5
 
