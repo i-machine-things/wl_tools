@@ -35,8 +35,14 @@ with open(os.path.join(os.path.dirname(__file__), "config.json"), "r") as f:
 API_KEY = config["api"]["key"]
 API_SECRET = config["api"]["secret"]
 STATION_ID = config["api"]["stationId"]
-LOG_FILE = os.path.join(os.path.dirname(__file__), 'LOGS', f'weather_data_{now.strftime("%b_%Y")}.csv')
-JSON_LOG = os.path.join(os.path.dirname(__file__), 'LOGS', f'weather_data_{now.strftime("%b_%Y")}.json')
+
+# Create LOGS directory if it doesn't exist
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+LOGS_DIR = os.path.join(SCRIPT_DIR, 'LOGS')
+os.makedirs(LOGS_DIR, exist_ok=True)
+
+LOG_FILE = os.path.join(LOGS_DIR, f'weather_data_{now.strftime("%b_%Y")}.csv')
+JSON_LOG = os.path.join(LOGS_DIR, f'weather_data_{now.strftime("%b_%Y")}.json')
 MAX_RETRIES = 3
 RETRY_DELAY = 5
 

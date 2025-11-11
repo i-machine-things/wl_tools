@@ -1,7 +1,7 @@
 import json
 import smtplib
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -18,7 +18,7 @@ Use with crontab to send reports at desired intervals:
 0 7 * * * /usr/bin/python3 /path/to/email_csv.py
 """
 # Email Configuration
-
+now = datetime.now()
 with open(os.path.join(os.path.dirname(__file__), "config.json")) as f:
     config = json.load(f)   
 
@@ -29,12 +29,18 @@ RECIPIENT_EMAIL = config["email"]["recipient_email"]
 SMTP_SERVER = config["email"]["smtp_server"]
 SMTP_PORT = config["email"]["smtp_port"]
 # Log file path
-CSV_LOG = os.path.join(os.path.dirname(__file__), "weather_data.csv")
+last_month = datetime.now() - timedelta(days=datetime.now().day)
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+LOGS_DIR = os.path.join(SCRIPT_DIR, 'LOGS')
+os.makedirs(LOGS_DIR, exist_ok=True)
+
+LOG_FILE = os.path.join(LOGS_DIR, f'weather_data_{last_month.strftime("%b_%Y")}.csv')
 
 def send_csv_email():
 	"""Send the CSV log file via email to all recipients"""
-	if not os.path.isfile(CSV_LOG):
-		print(f"Error: {CSV_LOG} not found")
+	if not os.path.isfile(LOG_FILE):
+		print(f"Error: {LOG_FILE} not found")
 		return False
 	
 	try:
@@ -72,11 +78,11 @@ Your Weather Logger
 			message.attach(MIMEText(body, "plain"))
 			
 			# Attach CSV file
-			with open(CSV_LOG, 'rb') as attachment:
+			with open(LOG_FILE, 'rb') as attachment:
 				part = MIMEBase("application", "octet-stream")
 				part.set_payload(attachment.read())
 				encoders.encode_base64(part)
-				part.add_header("Content-Disposition", f"attachment; filename= {CSV_LOG}")
+				part.add_header("Content-Disposition", f"attachment; filename={os.path.basename(LOG_FILE)}")
 				message.attach(part)
 			
 			# Send email to this recipient
@@ -84,7 +90,7 @@ Your Weather Logger
 			print(f"✓ Email sent successfully to {recipient}")
 		
 		server.quit()
-		print(f"✓ All emails sent with attachment: {CSV_LOG}")
+		print(f"✓ All emails sent with attachment: {LOG_FILE}")
 		return True
 		
 	except smtplib.SMTPAuthenticationError:
