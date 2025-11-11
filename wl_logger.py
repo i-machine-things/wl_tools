@@ -2,7 +2,7 @@ import requests
 import json
 import csv
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 """
 This script fetches current weather data from the WeatherLink API and logs it to a CSV file.
@@ -28,6 +28,20 @@ set poll interval useing crontab -e
 """
 # Configuration
 now = datetime.now()
+
+# timezone adjustment
+# UTC timezone = 0 hours
+# pacific timezone = -8 hours
+# central timezone = -7 hours
+# mountain timezone = -6 hours
+# eastern timezone = -5 hours
+# daylight savings += -1 hours
+
+if time.localtime().tm_isdst and time.daylight:
+    now += timedelta(hours=-7)
+else:
+    now += timedelta(hours=-8)
+
 
 with open(os.path.join(os.path.dirname(__file__), "config.json"), "r") as f:
     config = json.load(f)
@@ -153,7 +167,7 @@ def extract_data(api_response):
         print(f"Unexpected response structure: {api_response}")
         return None
     
-    timestamp = datetime.now().isoformat()
+    timestamp = now.isoformat()
     
     # Map field names from the API response
     extracted = {
