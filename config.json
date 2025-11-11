@@ -8,7 +8,7 @@
     "email":{
         "sender_email": "example@gmail.com",
         "sender_password": "app-specific-password",
-        "recipient_email": ["example1@gmail.com", "example2@gmail.com"],
+        "recipient_email": ["example1@gmail.com"],
         "smtp_server": "smtp.gmail.com",
         "smtp_port": 587
     },
