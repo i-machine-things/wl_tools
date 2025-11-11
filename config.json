@@ -11,5 +11,10 @@
         "recipient_email": ["example1@gmail.com", "example2@gmail.com"],
         "smtp_server": "smtp.gmail.com",
         "smtp_port": 587
-    }    
+    }
+    
+    "timezone":{
+        "offset_hours": -8,
+        "daylight_savings": true
+    }
 }
