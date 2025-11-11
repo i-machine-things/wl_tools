@@ -93,15 +93,68 @@ print_info "You need your API credentials from https://weatherlink.com/account/a
 read -p "Enter your API Key: " API_KEY
 read -p "Enter your API Secret: " API_SECRET
 
+# Create or update config.json
+CONFIG_FILE="$SCRIPT_DIR/config.json"
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    cat > "$CONFIG_FILE" << EOF
+{
+    "api":{
+        "key":"YOUR_API_KEY",
+        "secret":"YOUR_API_SECRET",
+        "stationId":"YOUR_STATION_ID"
+    },
+
+    "email":{
+        "sender_email": "example@gmail.com",
+        "sender_password": "app-specific-password",
+        "recipient_email": ["example1@gmail.com", "example2@gmail.com"],
+        "smtp_server": "smtp.gmail.com",
+        "smtp_port": 587
+    }    
+}
+EOF
+    print_success "Created config.json"
+fi
+
+# Update API credentials in config.json using Python
+python3 << EOF
+import json
+import os
+
+config_file = "$CONFIG_FILE"
+with open(config_file, 'r') as f:
+    config = json.load(f)
+
+config['api']['key'] = "$API_KEY"
+config['api']['secret'] = "$API_SECRET"
+
+with open(config_file, 'w') as f:
+    json.dump(config, f, indent=4)
+
+print("API credentials updated in config.json")
+EOF
+
 print_info "Listing available stations..."
 python3 "$SCRIPT_DIR/wl_logger.py" --list-stations 2>/dev/null || print_warning "Could not list stations. Make sure credentials are correct."
 
 read -p "Enter your Station ID: " STATION_ID
 
-# Update configuration in wl_logger.py
-sed -i "s/API_KEY = .*/API_KEY = \"$API_KEY\"/" "$SCRIPT_DIR/wl_logger.py"
-sed -i "s/API_SECRET = .*/API_SECRET = \"$API_SECRET\"/" "$SCRIPT_DIR/wl_logger.py"
-sed -i "s/STATION_ID = .*/STATION_ID = \"$STATION_ID\"/" "$SCRIPT_DIR/wl_logger.py"
+# Update Station ID in config.json
+python3 << EOF
+import json
+
+config_file = "$CONFIG_FILE"
+with open(config_file, 'r') as f:
+    config = json.load(f)
+
+config['api']['stationId'] = "$STATION_ID"
+
+with open(config_file, 'w') as f:
+    json.dump(config, f, indent=4)
+
+print("Station ID updated in config.json")
+EOF
 
 print_success "API credentials configured"
 
@@ -113,12 +166,37 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     read -p "Enter sender email (Gmail): " SENDER_EMAIL
     read -sp "Enter Gmail app password: " SENDER_PASSWORD
     echo
-    read -p "Enter recipient email: " RECIPIENT_EMAIL
+    read -p "Enter recipient email (comma-separated for multiple): " RECIPIENT_EMAIL_INPUT
     
-    # Update configuration in email_csv.py
-    sed -i "s/SENDER_EMAIL = .*/SENDER_EMAIL = \"$SENDER_EMAIL\"/" "$SCRIPT_DIR/email_csv.py"
-    sed -i "s/SENDER_PASSWORD = .*/SENDER_PASSWORD = \"$SENDER_PASSWORD\"/" "$SCRIPT_DIR/email_csv.py"
-    sed -i "s/RECIPIENT_EMAIL = .*/RECIPIENT_EMAIL = \"$RECIPIENT_EMAIL\"/" "$SCRIPT_DIR/email_csv.py"
+    # Convert comma-separated emails to JSON array format
+    IFS=',' read -ra EMAIL_ARRAY <<< "$RECIPIENT_EMAIL_INPUT"
+    RECIPIENT_JSON="["
+    for i in "${!EMAIL_ARRAY[@]}"; do
+        email=$(echo "${EMAIL_ARRAY[$i]}" | xargs)  # trim whitespace
+        if [ $i -gt 0 ]; then
+            RECIPIENT_JSON+=", "
+        fi
+        RECIPIENT_JSON+="\"$email\""
+    done
+    RECIPIENT_JSON+="]"
+    
+    # Update email configuration in config.json
+    python3 << EOF
+import json
+
+config_file = "$CONFIG_FILE"
+with open(config_file, 'r') as f:
+    config = json.load(f)
+
+config['email']['sender_email'] = "$SENDER_EMAIL"
+config['email']['sender_password'] = "$SENDER_PASSWORD"
+config['email']['recipient_email'] = $RECIPIENT_JSON
+
+with open(config_file, 'w') as f:
+    json.dump(config, f, indent=4)
+
+print("Email configuration updated in config.json")
+EOF
     
     print_success "Email configuration saved"
     EMAIL_CONFIGURED=true
@@ -142,7 +220,7 @@ print_header "Step 7: Setting Up Cron Jobs"
 
 PYTHON_PATH=$(which python3)
 FULL_LOGGER_PATH="$SCRIPT_DIR/wl_logger.py"
-FULL_EMAIL_PATH="$SCRIPT_DIR/email_csv.py"
+FULL_REPORT_PATH="$SCRIPT_DIR/wl_report.py"
 
 print_info "Select data logging interval:"
 echo "  1) Every 5 minutes"
@@ -168,8 +246,8 @@ esac
 
 # Set up logging cron if selected
 if [ ! -z "$LOGGER_CRON" ]; then
-    # Remove existing cron job if it exists
-    crontab -l 2>/dev/null | grep -v "$FULL_LOGGER_PATH" | crontab - 2>/dev/null || true
+    # Remove only this specific script's cron job if it exists
+    (crontab -l 2>/dev/null | grep -v "wl_logger.py" || true) | crontab - 2>/dev/null || true
     
     # Add new cron job
     (crontab -l 2>/dev/null || true; echo "$LOGGER_CRON $PYTHON_PATH $FULL_LOGGER_PATH") | crontab -
@@ -200,8 +278,11 @@ if [ "$EMAIL_CONFIGURED" = true ]; then
     esac
     
     if [ ! -z "$EMAIL_CRON" ]; then
+        # Remove only this specific script's cron job if it exists
+        (crontab -l 2>/dev/null | grep -v "wl_report.py" || true) | crontab - 2>/dev/null || true
+        
         # Add email cron job
-        (crontab -l 2>/dev/null || true; echo "$EMAIL_CRON $PYTHON_PATH $FULL_EMAIL_PATH") | crontab -
+        (crontab -l 2>/dev/null || true; echo "$EMAIL_CRON $PYTHON_PATH $FULL_REPORT_PATH") | crontab -
         print_success "Email cron job added: $EMAIL_CRON"
     fi
 fi
@@ -212,23 +293,24 @@ print_success "WeatherLink Data Logger is now installed and configured"
 
 echo
 print_info "Your current cron jobs:"
-crontab -l 2>/dev/null | grep -E "(wl_logger|email_csv)" || print_info "No weatherlink cron jobs found"
+crontab -l 2>/dev/null | grep -E "(wl_logger|wl_report)" || print_info "No weatherlink cron jobs found"
 
 echo
 print_info "Log files will be saved to:"
-echo "  - $SCRIPT_DIR/weather_data.csv (Excel-readable)"
-echo "  - $SCRIPT_DIR/weather_data.json (JSON format)"
+echo "  - $SCRIPT_DIR/LOGS/weather_data_<Month>_<Year>.csv (Excel-readable)"
+echo "  - $SCRIPT_DIR/LOGS/weather_data_<Month>_<Year>.json (JSON format)"
 
 echo
 print_info "Configuration files:"
+echo "  - $SCRIPT_DIR/config.json (Configuration)"
 echo "  - $SCRIPT_DIR/wl_logger.py (Data logger)"
-echo "  - $SCRIPT_DIR/email_csv.py (Email sender)"
+echo "  - $SCRIPT_DIR/wl_report.py (Email sender)"
 
 echo
 print_info "Manual commands:"
 echo "  Fetch data now:     python3 $FULL_LOGGER_PATH"
 echo "  List stations:      python3 $FULL_LOGGER_PATH --list-stations"
-echo "  Send email now:     python3 $FULL_EMAIL_PATH"
+echo "  Send email now:     python3 $FULL_REPORT_PATH"
 echo "  View cron jobs:     crontab -l"
 echo "  Edit cron jobs:     crontab -e"
 
