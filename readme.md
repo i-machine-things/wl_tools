@@ -19,8 +19,8 @@ A lightweight Python suite for logging weather data from the WeatherLink API v2 
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/i-machine-things/weatherLink.git
-cd weatherLink
+git clone https://github.com/i-machine-things/wl_tools.git
+cd wl_tools
 ```
 
 2. Install dependencies:
@@ -63,8 +63,8 @@ You should see output like:
 ```
 [2025-11-09 02:24:36] Fetching weather data...
 Temp: 60.8°C | Humidity: 63.8% | Dew Point: 48.5°C | Heat Index: 59.7°C | AQI: 21.9 (Good) | PM2.5: 10.96 | PM10: 11.13
-Data saved to weather_data.csv
-Data saved to weather_data.json
+Data saved to weather_data_<month>_<year>.csv
+Data saved to weather_data_<month>_<year>.json
 Data logged successfully
 ```
 
@@ -206,11 +206,11 @@ Both are required for authentication.
    0 9 * * 1 /usr/bin/python3 /home/user/weatherLink/wl_report.py
    ```
 
-3. **Open CSV in Excel**: Download your email attachment and open `weather_data.csv`
+3. **Open CSV in Excel**: Download your email attachment and open `weather_data_<month>_<year>.csv`
 
 ## License
 
-MIT License - see LICENSE file for details
+GNU GENERAL PUBLIC LICENSE - see LICENSE file for details
 
 ## Support
 
