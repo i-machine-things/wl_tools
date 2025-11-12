@@ -72,7 +72,7 @@ This file contains all recorded weather measurements including:
 - Particulate Matter (PM1, PM2.5, PM10)
 - Air Quality Index (AQI)
 
-Best regards,
+Happy {datetime.now().strftime('%A')},
 Your Weather Logger
 			"""
 			message.attach(MIMEText(body, "plain"))
