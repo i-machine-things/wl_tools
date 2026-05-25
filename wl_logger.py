@@ -37,10 +37,10 @@ now = datetime.now()
 # eastern timezone = -5 hours
 # daylight savings += -1 hours
 
+_tz_offset = config["timezone"]["offset_hours"]
 if time.localtime().tm_isdst and time.daylight:
-    now += timedelta(hours=-7)
-else:
-    now += timedelta(hours=-8)
+    _tz_offset += 1  # DST advances the clock by 1 hour
+now += timedelta(hours=_tz_offset)
 
 
 with open(os.path.join(os.path.dirname(__file__), "config.json"), "r") as f:
