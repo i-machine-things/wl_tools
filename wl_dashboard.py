@@ -65,10 +65,6 @@ def _station_name():
                 if str(s.get('station_id')) == str(_STATION_ID):
                     _station_name_cache = s.get('station_name', 'WEATHER STATION').upper()
                     return _station_name_cache
-            stations = r.json().get('stations', [])
-            if stations:
-                _station_name_cache = stations[0].get('station_name', 'WEATHER STATION').upper()
-                return _station_name_cache
         except Exception:
             pass
         _station_name_cache = 'WEATHER STATION'
@@ -92,7 +88,8 @@ def _fetch_current():
             r.raise_for_status()
             raw = r.json()
         except Exception as e:
-            return {'error': str(e)}
+            print(f'[wl_dashboard] _fetch_current error: {e}', flush=True)
+            return {'error': 'Failed to fetch current conditions from WeatherLink'}
 
         data = None
         if 'sensors' in raw:
@@ -142,7 +139,10 @@ def _fetch_history(days=7):
         return []
     cutoff  = _local_now() - timedelta(days=days)
     records = []
-    for fp in sorted(LOGS_DIR.glob('weather_data_*.json'))[-3:]:
+    def _file_date(p):
+        try: return datetime.strptime(p.stem[len('weather_data_'):], '%b_%Y')
+        except ValueError: return datetime.min
+    for fp in sorted(LOGS_DIR.glob('weather_data_*.json'), key=_file_date)[-3:]:
         try:
             records.extend(json.loads(fp.read_text()))
         except Exception:
@@ -175,7 +175,8 @@ class Handler(SimpleHTTPRequestHandler):
     # ── Handlers ─────────────────────────────────────────────────────────────
 
     def _get_current(self):
-        self._json(200, _fetch_current())
+        data = _fetch_current()
+        self._json(502 if 'error' in data else 200, data)
 
     def _get_history(self):
         self._json(200, _fetch_history())

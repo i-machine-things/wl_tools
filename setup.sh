@@ -97,8 +97,8 @@ if [ -f "$CONFIG_FILE" ]; then
 else
     print_info "You need your API credentials from https://weatherlink.com/account/api"
 
-    read -p "Enter your API Key: " API_KEY
-    read -p "Enter your API Secret: " API_SECRET
+    read -rp "Enter your API Key: " API_KEY
+    read -rp "Enter your API Secret: " API_SECRET
 
     cat > "$CONFIG_FILE" << EOF
 {
@@ -134,7 +134,7 @@ EOF
     print_info "Listing available stations..."
     python3 "$SCRIPT_DIR/wl_logger.py" --list-stations 2>/dev/null || print_warning "Could not list stations. Make sure credentials are correct."
 
-    read -p "Enter your Station ID: " STATION_ID
+    read -rp "Enter your Station ID: " STATION_ID
 
     python3 << EOF
 import json
@@ -348,7 +348,11 @@ EOF
     print_info "Dashboard URL: http://$(hostname -I | awk '{print $1}' 2>/dev/null || echo localhost):8081"
     print_info "Service commands:"
     echo "  Status:  $SYSTEMCTL status $SERVICE_NAME"
-    echo "  Logs:    journalctl -u $SERVICE_NAME -f"
+    if [ "$WANTS_SYSTEM" = false ]; then
+        echo "  Logs:    journalctl --user -u $SERVICE_NAME -f"
+    else
+        echo "  Logs:    journalctl -u $SERVICE_NAME -f"
+    fi
     echo "  Restart: $SYSTEMCTL restart $SERVICE_NAME"
     echo "  Stop:    $SYSTEMCTL stop $SERVICE_NAME"
     DASHBOARD_CONFIGURED=true
