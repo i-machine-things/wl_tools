@@ -12,11 +12,13 @@ html,body{
   color:#c8c8d8;
   font-family:'Courier New',Consolas,monospace;
   font-size:13px;
-  min-height:100vh;
+  height:100vh;
+  overflow:hidden;
 }
 
 /* ── HEADER ────────────────────────────────────────────── */
 #hdr{
+  position:fixed;top:0;left:0;right:0;z-index:100;
   background:#06060c;
   border-bottom:2px solid #181828;
   padding:8px 18px;
@@ -45,7 +47,11 @@ html,body{
 }
 
 /* ── GRID ─────────────────────────────────────────────── */
-.grid{display:flex;flex-direction:column;gap:9px;padding:10px}
+.grid{
+  position:fixed;top:58px;bottom:0;left:0;right:0;
+  overflow-y:scroll;
+  display:flex;flex-direction:column;gap:9px;padding:10px;
+}
 
 .dash-row{display:flex;gap:9px}
 .dash-row .card{flex:1 1 0;min-width:0}
