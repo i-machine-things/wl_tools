@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather Station Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  background:#090910;
+  color:#c8c8d8;
+  font-family:'Courier New',Consolas,monospace;
+  font-size:13px;
+  min-height:100vh;
+}
+
+/* ── HEADER ────────────────────────────────────────────── */
+#hdr{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:#06060c;
+  border-bottom:2px solid #181828;
+  padding:8px 18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:6px;
+}
+#hdr-left{display:flex;flex-direction:column;gap:2px}
+#hdr-title{
+  font-size:17px;
+  font-weight:bold;
+  letter-spacing:3px;
+  color:#e8e8f4;
+  text-transform:uppercase;
+}
+#hdr-meta{font-size:10px;color:#445;letter-spacing:1px}
+#clock{
+  font-size:26px;
+  font-weight:bold;
+  color:#00aaff;
+  letter-spacing:4px;
+  text-shadow:0 0 12px #00aaff55;
+  white-space:nowrap;
+}
+
+/* ── GRID ─────────────────────────────────────────────── */
+.grid{
+  margin-top:58px;
+  display:flex;flex-direction:column;gap:9px;padding:10px;
+}
+
+.dash-row{display:flex;gap:9px;flex-shrink:0}
+.dash-row .card{flex:1 1 0;min-width:0}
+.dash-row .card.span2{flex:2 1 0;min-width:0}
+
+@media(max-width:900px){
+  .dash-row{flex-wrap:wrap}
+  .dash-row .card{flex:1 1 calc(50% - 5px)}
+  .dash-row .card.span2{flex:1 1 100%}
+}
+@media(max-width:480px){
+  .dash-row .card,.dash-row .card.span2{flex:1 1 100%}
+}
+
+/* ── CARD ─────────────────────────────────────────────── */
+.card{
+  background:#10101c;
+  border:1px solid #1c1c2e;
+  border-radius:2px;
+  overflow:hidden;
+}
+.ch{
+  padding:5px 11px;
+  font-size:10px;
+  font-weight:bold;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.cs{
+  font-size:10px;
+  font-style:italic;
+  color:#445;
+  padding:2px 11px 5px;
+  letter-spacing:.5px;
+}
+.cb{padding:10px 12px}
+
+/* header accent colours */
+.ht{background:#0b3230;color:#00c8a0;border-bottom:1px solid #154840}
+.hb{background:#0b1d38;color:#4db8ff;border-bottom:1px solid #153060}
+.ha{background:#281c00;color:#ffaa00;border-bottom:1px solid #483400}
+.hr{background:#280b0b;color:#ff6060;border-bottom:1px solid #481818}
+.hp{background:#1c0b28;color:#c080ff;border-bottom:1px solid #341848}
+.hg{background:#0b2814;color:#60d060;border-bottom:1px solid #185028}
+.hw{background:#1c1828;color:#a0a0c8;border-bottom:1px solid #302c44}
+
+/* ── BIG STAT ─────────────────────────────────────────── */
+.big{
+  font-size:52px;
+  font-weight:bold;
+  line-height:1;
+  color:#e8e8f4;
+  letter-spacing:-1px;
+}
+.unit{font-size:18px;color:#445;margin-left:3px}
+.slabel{
+  font-size:10px;
+  color:#445;
+  margin-top:5px;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+}
+
+/* ── MINI STAT ROW ────────────────────────────────────── */
+.mrow{
+  display:flex;
+  justify-content:space-around;
+  text-align:center;
+  padding:8px 0 2px;
+  border-top:1px solid #1a1a2a;
+  margin-top:10px;
+}
+.mrow .mv{font-size:22px;font-weight:bold;color:#d0d0e4}
+.mrow .ml{font-size:9px;color:#445;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+
+/* ── HUMIDITY BAR ─────────────────────────────────────── */
+.hbar-track{
+  background:#0a0a14;
+  border:1px solid #1a1a2a;
+  border-radius:1px;
+  height:10px;
+  margin-top:8px;
+  overflow:hidden;
+}
+.hbar-fill{
+  height:100%;
+  background:linear-gradient(90deg,#00c8a044,#00c8a0);
+  transition:width 1.2s ease;
+}
+.hbar-labels{
+  display:flex;
+  justify-content:space-between;
+  font-size:9px;
+  color:#334;
+  margin-top:2px;
+}
+
+/* ── GAUGE ────────────────────────────────────────────── */
+.gauge-wrap{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:10px 12px 6px;
+}
+.gauge-badge{
+  display:inline-block;
+  padding:3px 10px;
+  border-radius:2px;
+  font-weight:bold;
+  font-size:11px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  margin-top:4px;
+}
+.gauge-note{font-size:9px;color:#334;margin-top:4px;letter-spacing:.5px}
+
+/* ── AQI BADGE (big) ──────────────────────────────────── */
+.aqi-big{
+  text-align:center;
+  padding:14px 12px;
+}
+.aqi-big .alabel{font-size:10px;color:#445;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.aqi-big .aval{font-size:56px;font-weight:bold;line-height:1;margin-bottom:6px}
+.aqi-big .adesc{font-size:14px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:2px;display:inline-block}
+.aqi-big .asub{font-size:10px;color:#445;margin-top:6px}
+
+/* ── CHART WRAPPER ────────────────────────────────────── */
+.cw{position:relative;height:170px;padding:4px 8px 8px}
+.cw-tall{position:relative;height:210px;padding:4px 8px 8px}
+
+/* ── PM TABLE ─────────────────────────────────────────── */
+.pm-table{width:100%;border-collapse:collapse;font-size:12px}
+.pm-table td{padding:5px 10px}
+.pm-table tr:not(:last-child) td{border-bottom:1px solid #141424}
+.pm-val{font-size:22px;font-weight:bold;text-align:right}
+.pm-bar-cell{width:45%}
+.pm-bar-bg{background:#0a0a14;border-radius:1px;height:8px;overflow:hidden}
+.pm-bar-fg{height:100%;border-radius:1px;transition:width 1s}
+
+/* ── WIND ROSE ────────────────────────────────────────── */
+.wind-center{text-align:center;padding:10px 12px}
+.wind-dir-label{
+  font-size:32px;font-weight:bold;color:#4db8ff;
+  display:block;margin-bottom:4px;
+}
+.wind-speeds{display:flex;justify-content:space-around;margin-top:8px}
+.wind-speeds .mv{font-size:20px;font-weight:bold;color:#d0d0e4}
+.wind-speeds .ml{font-size:9px;color:#445;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+
+/* ── STATUS / EMPTY ──────────────────────────────────── */
+.no-data{
+  color:#334;text-align:center;padding:24px 12px;font-size:11px;
+  letter-spacing:1px;line-height:1.8;
+}
+.err-box{color:#ff6060;text-align:center;padding:24px;line-height:1.8}
+.dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  margin-right:5px;vertical-align:middle;
+}
+.dok{background:#00c8a0}
+.dwarn{background:#ffaa00;animation:blink 1.2s step-start infinite}
+.derr{background:#ff6060;animation:blink .6s step-start infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ── MISC ─────────────────────────────────────────────── */
+hr.div{border:none;border-top:1px solid #181828;margin:8px 0}
+.label-row{display:flex;justify-content:space-between;font-size:10px;color:#334;margin-top:3px}
+
+/* ── EDIT MODE ────────────────────────────────────────── */
+.card{position:relative}
+
+/* Hidden cards disappear in normal mode */
+.card.card-hidden{display:none}
+/* In edit mode every card is visible */
+body.edit-mode .card.card-hidden{display:block}
+
+/* Clickable overlay */
+.edit-ov{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;
+  cursor:pointer;z-index:20;
+  transition:background .15s;
+}
+.card:not(.card-hidden) .edit-ov{background:rgba(0,0,0,.6)}
+.card.card-hidden     .edit-ov{background:rgba(0,0,0,.8)}
+.edit-ov:hover{filter:brightness(1.15)}
+
+.edit-ov-name{
+  font-size:11px;letter-spacing:2px;
+  text-transform:uppercase;color:#a0a0b8;
+  text-align:center;padding:0 8px;
+}
+.edit-ov-badge{
+  font-size:11px;font-weight:bold;letter-spacing:3px;
+  padding:5px 18px;border:2px solid;border-radius:2px;
+  text-transform:uppercase;
+}
+.card:not(.card-hidden) .edit-ov-badge{color:#00c8a0;border-color:#00c8a0;background:#00c8a018}
+.card.card-hidden       .edit-ov-badge{color:#ff6060;border-color:#ff6060;background:#ff606018}
+
+/* Edit button */
+#edit-btn{
+  background:transparent;
+  border:1px solid #2a2a40;
+  color:#556;
+  font-family:'Courier New',Consolas,monospace;
+  font-size:11px;letter-spacing:2px;
+  padding:5px 16px;cursor:pointer;border-radius:2px;
+  text-transform:uppercase;transition:all .2s;
+}
+#edit-btn:hover{border-color:#4db8ff;color:#4db8ff}
+body.edit-mode #edit-btn{border-color:#00c8a0;color:#00c8a0;background:#00c8a015}
+
+/* ── DRAG & DROP ──────────────────────────────────────── */
+body.edit-mode .edit-ov{cursor:grab}
+body.edit-mode .edit-ov:active{cursor:grabbing}
+.edit-ov-grip{font-size:22px;opacity:.45;color:#4db8ff;margin-bottom:6px;line-height:1}
+[data-wid].drag-source{opacity:.3;border-style:dashed;border-color:#2a2a50}
+[data-wid].drag-over{outline:2px solid #4db8ff;outline-offset:-2px;border-color:#4db8ff}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="hdr">
+  <div id="hdr-left">
+    <div id="hdr-title">&#9729; <span id="station-name">WEATHER STATION</span> &mdash; ENVIRONMENTAL MONITOR</div>
+    <div id="hdr-meta">
+      Report: <span id="rpt-date">--</span> &nbsp;|&nbsp; Updated: <span id="rpt-updated">--</span>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;flex-shrink:0">
+    <button id="edit-btn" onclick="toggleEditMode()">EDIT</button>
+    <div id="clock">--:--:-- --</div>
+  </div>
+</div>
+
+<!-- DASHBOARD GRID -->
+<div class="grid" id="dash">
+  <div class="card span4">
+    <div class="no-data">&#9711; CONNECTING TO WEATHER STATION...</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════════════════ */
+const REFRESH_MS = 5 * 60 * 1000;
+
+function aqiColor(v) {
+  if (v == null) return '#445';
+  if (v <=  50) return '#00e400';
+  if (v <= 100) return '#e0e000';
+  if (v <= 150) return '#ff7e00';
+  if (v <= 200) return '#ff3030';
+  if (v <= 300) return '#9f3fa7';
+  return '#7e0023';
+}
+function aqiDesc(v) {
+  if (v == null) return 'N/A';
+  if (v <=  50) return 'Good';
+  if (v <= 100) return 'Moderate';
+  if (v <= 150) return 'Unhealthy (Sensitive)';
+  if (v <= 200) return 'Unhealthy';
+  if (v <= 300) return 'Very Unhealthy';
+  return 'Hazardous';
+}
+function aqiHeaderClass(v) {
+  if (v == null || v <= 50) return 'ht';
+  if (v <= 100) return 'ha';
+  if (v <= 150) return 'ha';
+  if (v <= 200) return 'hr';
+  return 'hp';
+}
+
+function fmt(v, dec=1) {
+  return v != null ? (dec === 0 ? Math.round(v) : Number(v).toFixed(dec)) : '—';
+}
+function fmtDir(deg) {
+  if (deg == null) return '—';
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE',
+                'S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(deg / 22.5) % 16];
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CLOCK
+═══════════════════════════════════════════════════════════ */
+function tickClock() {
+  const n = new Date();
+  const h = String(n.getHours() % 12 || 12).padStart(2,'0');
+  const m = String(n.getMinutes()).padStart(2,'0');
+  const s = String(n.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent =
+    `${h}:${m}:${s} ${n.getHours() >= 12 ? 'PM' : 'AM'}`;
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+/* ═══════════════════════════════════════════════════════════
+   GAUGE SVG
+═══════════════════════════════════════════════════════════ */
+function makeSVGGauge(val, max, color, size=180) {
+  const cx = size/2, cy = size * 0.54, r = size * 0.36, sw = 13;
+  function pt(deg) {
+    const rad = (deg - 90) * Math.PI / 180;
+    return [cx + r*Math.cos(rad), cy + r*Math.sin(rad)];
+  }
+  const S=225, SWEEP=270;
+  const pct = Math.min(Math.max((val||0)/max, 0), 1);
+  const fill = pct * SWEEP;
+  const [sx,sy] = pt(S);
+  const [bgx,bgy] = pt(S+SWEEP);
+  const [fx,fy] = pt(S+fill);
+  const bgLarge=1, fillLarge = fill>180?1:0;
+
+  const vH = size * 0.78;
+  return `<svg width="${size}" height="${vH}" viewBox="0 0 ${size} ${size}" style="overflow:visible">
+    <path d="M${sx.toFixed(2)} ${sy.toFixed(2)} A${r} ${r} 0 ${bgLarge} 1 ${bgx.toFixed(2)} ${bgy.toFixed(2)}"
+      stroke="#1a1a2c" stroke-width="${sw}" fill="none" stroke-linecap="round"/>
+    ${fill>0.5?`<path d="M${sx.toFixed(2)} ${sy.toFixed(2)} A${r} ${r} 0 ${fillLarge} 1 ${fx.toFixed(2)} ${fy.toFixed(2)}"
+      stroke="${color}" stroke-width="${sw}" fill="none" stroke-linecap="round"/>`:``}
+    <text x="${cx}" y="${cy+10}" text-anchor="middle"
+      font-family="Courier New,monospace" font-size="34" font-weight="bold" fill="#e8e8f4">
+      ${val!=null?Math.round(val):'—'}
+    </text>
+    <text x="${(sx-6).toFixed(1)}" y="${(sy+16).toFixed(1)}" text-anchor="middle"
+      font-family="Courier New,monospace" font-size="9" fill="#334">0</text>
+    <text x="${(bgx+6).toFixed(1)}" y="${(bgy+16).toFixed(1)}" text-anchor="middle"
+      font-family="Courier New,monospace" font-size="9" fill="#334">${max}</text>
+  </svg>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHART DEFAULTS
+═══════════════════════════════════════════════════════════ */
+const FONT = "'Courier New', monospace";
+const gridColor = '#161624';
+const tickColor = '#3a3a50';
+Chart.defaults.color = tickColor;
+Chart.defaults.font.family = FONT;
+
+function baseOpts(extra={}) {
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:400},
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        backgroundColor:'#1a1a2c', titleColor:'#778', bodyColor:'#c8c8d8',
+        borderColor:'#2a2a40', borderWidth:1,
+        titleFont:{family:FONT,size:10}, bodyFont:{family:FONT,size:11},
+      },
+      ...extra.plugins
+    },
+    scales:{
+      x:{grid:{color:gridColor}, ticks:{color:tickColor,font:{family:FONT,size:9},maxTicksLimit:10}, ...extra.xExtra},
+      y:{grid:{color:gridColor}, ticks:{color:tickColor,font:{family:FONT,size:9}}, beginAtZero:true, ...extra.yExtra}
+    }
+  };
+}
+
+let charts = {};
+function mkChart(id, type, data, opts) {
+  if (charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  charts[id] = new Chart(ctx.getContext('2d'), {type, data, options:opts});
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BUILD DASHBOARD
+═══════════════════════════════════════════════════════════ */
+function build(cur, hist) {
+  const aqi    = cur.aqi_val;
+  const ac     = aqiColor(aqi);
+  const desc   = cur.aqi_desc || aqiDesc(aqi);
+  const ahdr   = aqiHeaderClass(aqi);
+
+  /* ── history slices ── */
+  const hist24 = hist.slice(-96);   // up to 24 h at 15-min polling
+  const lbl24  = hist24.map(d => {
+    const t = new Date(d.timestamp);
+    return t.getHours().toString().padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
+  });
+  const aqiToday = hist24.map(d => d.aqi_val);
+  const tmpToday = hist24.map(d => d.temp);
+
+  const lbl7   = hist.map(d => {
+    const t = new Date(d.timestamp);
+    return (t.getMonth()+1)+'/'+t.getDate();
+  });
+  const aqi7   = hist.map(d => d.aqi_val);
+  const pm25_7 = hist.map(d => d.pm_2p5 != null ? d.pm_2p5 : null);
+  const tmp7   = hist.map(d => d.temp);
+  const hum7   = hist.map(d => d.humidity);
+
+  const hasHist = hist.length > 0;
+
+  /* ── PM bar helpers ── */
+  function pmRow(label, val, color, maxVal=50) {
+    const w = val != null ? Math.min(val/maxVal*100, 100).toFixed(1) : 0;
+    return `
+      <tr>
+        <td style="color:#556;font-size:10px;letter-spacing:1px">${label}</td>
+        <td class="pm-val" style="color:${color}">${fmt(val,1)}</td>
+        <td class="pm-bar-cell">
+          <div class="pm-bar-bg">
+            <div class="pm-bar-fg" style="width:${w}%;background:${color}88"></div>
+          </div>
+        </td>
+      </tr>`;
+  }
+
+  /* ── no-data placeholder chart ── */
+  function noDataHtml(msg='No history yet — data appears after logging begins.') {
+    return `<div class="no-data">${msg}</div>`;
+  }
+
+  /* ── wind card body ── */
+  const windDir   = fmtDir(cur.wind_dir);
+  const windAvail = cur.wind_speed != null || cur.wind_gust != null;
+
+  /* ── solar / UV ── */
+  const uvBand = cur.uv_index != null
+    ? cur.uv_index <= 2 ? {t:'LOW',c:'#00c8a0'} :
+      cur.uv_index <= 5 ? {t:'MODERATE',c:'#e0e000'} :
+      cur.uv_index <= 7 ? {t:'HIGH',c:'#ff7e00'} :
+      cur.uv_index <= 10 ? {t:'VERY HIGH',c:'#ff3030'} :
+      {t:'EXTREME',c:'#9f3fa7'}
+    : null;
+
+  /* ═══ RENDER HTML ═══════════════════════════════════════ */
+  document.getElementById('dash').innerHTML = `
+
+    <!-- ── Row 1: Temp, Humidity, AQI gauge, PM ── -->
+    <div class="dash-row">
+
+    <div class="card" data-wid="w-temp">
+      <div class="ch hb">TEMPERATURE</div>
+      <div class="cs">Indoor Conditions</div>
+      <div class="cb">
+        <div class="big">${fmt(cur.temp,1)}<span class="unit">°F</span></div>
+        <div class="slabel">Current Temperature</div>
+        <div class="mrow">
+          <div>
+            <div class="mv">${fmt(cur.dew_point,1)}°</div>
+            <div class="ml">Dew Pt</div>
+          </div>
+          <div>
+            <div class="mv">${fmt(cur.heat_index,1)}°</div>
+            <div class="ml">Feels Like</div>
+          </div>
+          <div>
+            <div class="mv">${fmt(cur.wet_bulb,1)}°</div>
+            <div class="ml">Wet Bulb</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-wid="w-humidity">
+      <div class="ch ht">HUMIDITY</div>
+      <div class="cs">Relative Humidity &amp; Dew Point</div>
+      <div class="cb">
+        <div class="big">${fmt(cur.humidity,0)}<span class="unit">%</span></div>
+        <div class="slabel">Relative Humidity</div>
+        <div class="hbar-track" style="margin-top:12px">
+          <div class="hbar-fill" id="hbar" style="width:${cur.humidity||0}%"></div>
+        </div>
+        <div class="hbar-labels"><span>0%</span><span>50%</span><span>100%</span></div>
+        <hr class="div" style="margin-top:10px">
+        <div style="font-size:11px;color:#556">
+          Dew Point &nbsp;<span style="color:#c8c8d8;font-weight:bold">${fmt(cur.dew_point,1)} °F</span>
+          &nbsp;&mdash;&nbsp;
+          ${cur.dew_point != null
+            ? cur.dew_point > 65 ? '<span style="color:#ff7e00">Uncomfortable</span>'
+              : cur.dew_point > 55 ? '<span style="color:#e0e000">Humid</span>'
+              : '<span style="color:#00c8a0">Comfortable</span>'
+            : '—'}
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-wid="w-aqi">
+      <div class="ch ${ahdr}">CURRENT AQI</div>
+      <div class="cs">Air Quality Index &middot; US EPA &middot; PM2.5</div>
+      <div class="gauge-wrap">
+        ${makeSVGGauge(aqi, 200, ac)}
+        <span class="gauge-badge"
+          style="background:${ac}22;color:${ac};border:1px solid ${ac}44">
+          ${desc}
+        </span>
+        <div class="gauge-note">Index: United States EPA &middot; PM2.5 only</div>
+      </div>
+    </div>
+
+    <div class="card" data-wid="w-pm">
+      <div class="ch hp">PARTICULATE MATTER</div>
+      <div class="cs">Indoor &middot; &micro;g/m&sup3;</div>
+      <div class="cb">
+        <table class="pm-table">
+          ${pmRow('PM 1.0',  cur.pm_1,   '#a080ff', 30)}
+          ${pmRow('PM 2.5',  cur.pm_2p5, '#ffaa00', 35)}
+          ${pmRow('PM 10',   cur.pm_10,  '#ff6060', 50)}
+        </table>
+        <hr class="div" style="margin-top:8px">
+        <div style="font-size:9px;color:#334;letter-spacing:.5px">
+          WHO Annual Guideline: PM2.5 &lt; 5 &micro;g/m&sup3; &nbsp;&bull;&nbsp; PM10 &lt; 15 &micro;g/m&sup3;
+        </div>
+      </div>
+    </div>
+
+    </div><!-- end row 1 -->
+
+    <!-- ── Row 2: AQI today, 7-day AQI ── -->
+    <div class="dash-row">
+
+    <div class="card span2" data-wid="w-aqi-today">
+      <div class="ch ht">AIR QUALITY INDEX — TODAY</div>
+      <div class="cs">Hourly Trend &middot; PM2.5 AQI</div>
+      <div class="cb">
+        ${hasHist
+          ? `<div class="cw"><canvas id="ch-aqi-today"></canvas></div>`
+          : noDataHtml()}
+      </div>
+    </div>
+
+    <div class="card span2" data-wid="w-aqi-7d">
+      <div class="ch hb">7-DAY AIR QUALITY INDEX</div>
+      <div class="cs">Historical Trend &middot; AQI &amp; PM2.5</div>
+      <div class="cb">
+        ${hasHist
+          ? `<div class="cw"><canvas id="ch-aqi-7d"></canvas></div>`
+          : noDataHtml()}
+      </div>
+    </div>
+
+    </div><!-- end row 2 -->
+
+    <!-- ── Row 3: Temp today, 7-day temp/hum ── -->
+    <div class="dash-row">
+
+    <div class="card span2" data-wid="w-tmp-today">
+      <div class="ch ha">TEMPERATURE TREND — TODAY</div>
+      <div class="cs">Hourly &middot; &deg;F</div>
+      <div class="cb">
+        ${hasHist
+          ? `<div class="cw"><canvas id="ch-tmp-today"></canvas></div>`
+          : noDataHtml()}
+      </div>
+    </div>
+
+    <div class="card span2" data-wid="w-tmphum">
+      <div class="ch hw">7-DAY TEMP &amp; HUMIDITY</div>
+      <div class="cs">Historical &middot; &deg;F &amp; %RH</div>
+      <div class="cb">
+        ${hasHist
+          ? `<div class="cw"><canvas id="ch-tmphum-7d"></canvas></div>`
+          : noDataHtml()}
+      </div>
+    </div>
+
+    </div><!-- end row 3 -->
+
+    <!-- ── Row 4: Heat index, Wet bulb, Wind, Solar/UV ── -->
+    <div class="dash-row">
+
+    <div class="card" data-wid="w-heat">
+      <div class="ch ha">HEAT INDEX</div>
+      <div class="cs">Apparent Temperature</div>
+      <div class="cb" style="text-align:center;padding:16px 12px">
+        <div class="big" style="color:#ffaa00">${fmt(cur.heat_index,1)}<span class="unit">°F</span></div>
+        <div class="slabel">Feels Like</div>
+        <hr class="div">
+        <div style="font-size:11px;color:#556">
+          ${cur.heat_index != null && cur.temp != null
+            ? cur.heat_index > cur.temp
+              ? '<span style="color:#ff7e00">&#9650; Warmer than actual</span>'
+              : cur.heat_index < cur.temp
+              ? '<span style="color:#4db8ff">&#9660; Cooler than actual</span>'
+              : '<span style="color:#778">= Same as actual</span>'
+            : '—'}
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-wid="w-wetbulb">
+      <div class="ch hg">WET BULB</div>
+      <div class="cs">Evaporative Cooling Limit</div>
+      <div class="cb" style="text-align:center;padding:16px 12px">
+        <div class="big" style="color:#60d060">${fmt(cur.wet_bulb,1)}<span class="unit">°F</span></div>
+        <div class="slabel">Wet Bulb Temp</div>
+        <hr class="div">
+        <div style="font-size:11px">
+          ${cur.wet_bulb != null
+            ? cur.wet_bulb > 85
+              ? '<span style="color:#ff3030">&#9888; DANGEROUS — Extreme heat stress</span>'
+              : cur.wet_bulb > 78
+              ? '<span style="color:#ff7e00">&#9888; HIGH — Heat stress risk</span>'
+              : cur.wet_bulb > 70
+              ? '<span style="color:#e0e000">&#9675; MODERATE</span>'
+              : '<span style="color:#00c8a0">&#10003; SAFE</span>'
+            : '<span style="color:#334">—</span>'}
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-wid="w-wind">
+      <div class="ch hb">WIND</div>
+      <div class="cs">Speed &amp; Direction</div>
+      <div class="cb wind-center">
+        ${windAvail ? `
+          <span class="wind-dir-label">${windDir}</span>
+          <div style="font-size:10px;color:#334;letter-spacing:1px">${cur.wind_dir != null ? cur.wind_dir+'°' : '—'}</div>
+          <div class="wind-speeds">
+            <div>
+              <div class="mv" style="color:#4db8ff">${fmt(cur.wind_speed,1)}</div>
+              <div class="ml">Avg MPH</div>
+            </div>
+            <div>
+              <div class="mv" style="color:#ffaa00">${fmt(cur.wind_gust,1)}</div>
+              <div class="ml">Gust MPH</div>
+            </div>
+          </div>
+        ` : `<div class="no-data" style="padding:16px">Wind sensor<br>not reporting</div>`}
+      </div>
+    </div>
+
+    <div class="card" data-wid="w-solar">
+      <div class="ch ${cur.solar_rad != null ? 'ha' : 'hw'}">SOLAR &amp; UV</div>
+      <div class="cs">Radiation &amp; UV Index</div>
+      <div class="cb" style="text-align:center;padding:10px 12px">
+        <div class="big" style="color:${cur.uv_index != null ? uvBand.c : '#445'}">${fmt(cur.uv_index,1)}</div>
+        <div class="slabel">UV Index</div>
+        ${cur.uv_index != null
+          ? `<div style="margin-top:6px"><span class="gauge-badge"
+              style="background:${uvBand.c}22;color:${uvBand.c};border:1px solid ${uvBand.c}44">
+              ${uvBand.t}</span></div>`
+          : ''}
+        <hr class="div">
+        <div style="font-size:12px;color:#556">
+          Solar Rad &nbsp;<span style="color:#c8c8d8;font-weight:bold">${cur.solar_rad != null ? Math.round(cur.solar_rad)+' W/m²' : '—'}</span>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- end row 4 -->
+
+    <!-- ── Row 5: Pressure, Rainfall, AQI detail, Data status ── -->
+    <div class="dash-row">
+
+    <div class="card" data-wid="w-pressure">
+      <div class="ch hw">BAROMETRIC PRESSURE</div>
+      <div class="cs">Sea Level</div>
+      <div class="cb" style="text-align:center;padding:16px 12px">
+        <div class="big" style="color:#a0a0c8;font-size:38px">${cur.pressure != null ? Number(cur.pressure).toFixed(2) : '—'}</div>
+        <div class="slabel">Inches of Mercury</div>
+        <hr class="div">
+        <div style="font-size:11px;color:#556">
+          ${cur.pressure != null
+            ? cur.pressure > 30.2 ? '<span style="color:#00c8a0">High — Clear / Stable</span>'
+              : cur.pressure > 29.8 ? '<span style="color:#778">Normal</span>'
+              : '<span style="color:#ffaa00">Low — Unsettled weather</span>'
+            : '—'}
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-wid="w-rainfall">
+      <div class="ch hb">RAINFALL</div>
+      <div class="cs">Daily Accumulation</div>
+      <div class="cb" style="text-align:center;padding:16px 12px">
+        <div class="big" style="color:#4db8ff;font-size:42px">${cur.rainfall != null ? Number(cur.rainfall).toFixed(2) : '—'}</div>
+        <div class="slabel">Inches Today</div>
+        <hr class="div">
+        <div style="font-size:11px;color:#556">
+          ${cur.rainfall != null
+            ? cur.rainfall === 0 ? '<span style="color:#778">No rainfall today</span>'
+              : cur.rainfall < 0.25 ? '<span style="color:#4db8ff">Light rain</span>'
+              : cur.rainfall < 1 ? '<span style="color:#4db8ff">Moderate rain</span>'
+              : '<span style="color:#c080ff">Heavy rain</span>'
+            : '—'}
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-wid="w-aqi-detail">
+      <div class="ch ${ahdr}">AQI DETAIL</div>
+      <div class="cs">Index Breakdown &middot; US EPA Scale</div>
+      <div class="cb">
+        ${[
+          ['0–50',   'Good',              '#00e400', aqi <= 50],
+          ['51–100', 'Moderate',          '#e0e000', aqi > 50  && aqi <= 100],
+          ['101–150','Unhealthy (Sens.)', '#ff7e00', aqi > 100 && aqi <= 150],
+          ['151–200','Unhealthy',         '#ff3030', aqi > 150 && aqi <= 200],
+          ['201–300','Very Unhealthy',    '#9f3fa7', aqi > 200 && aqi <= 300],
+          ['301+',   'Hazardous',         '#7e0023', aqi > 300],
+        ].map(([range,label,color,active]) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;
+            padding:4px 6px;margin-bottom:2px;border-radius:1px;
+            background:${active ? color+'22' : 'transparent'};
+            border-left:3px solid ${active ? color : '#1a1a2c'}">
+            <span style="color:${active ? color : '#334'};font-size:10px;letter-spacing:1px">${label}</span>
+            <span style="color:${active ? '#e8e8f4' : '#334'};font-size:10px">${range}</span>
+          </div>`
+        ).join('')}
+      </div>
+    </div>
+
+    <div class="card" data-wid="w-status">
+      <div class="ch hg">DATA STATUS</div>
+      <div class="cs">Logger &amp; Connection</div>
+      <div class="cb">
+        <div style="font-size:11px;line-height:2;color:#556">
+          <div><span class="dot dok"></span> API Connection &nbsp;<span style="color:#00c8a0">OK</span></div>
+          <div><span class="dot ${hist.length>0 ? 'dok' : 'dwarn'}"></span> History Records &nbsp;<span style="color:${hist.length>0?'#c8c8d8':'#ffaa00'}">${hist.length}</span></div>
+          <div><span class="dot ${cur.aqi_val!=null ? 'dok' : 'dwarn'}"></span> AQI Sensor</div>
+          <div><span class="dot ${cur.temp!=null ? 'dok' : 'dwarn'}"></span> Temp / Humidity</div>
+          <div><span class="dot ${cur.wind_speed!=null ? 'dok' : 'dwarn'}"></span> Wind Sensor</div>
+          <div><span class="dot ${cur.solar_rad!=null ? 'dok' : 'dwarn'}"></span> Solar / UV</div>
+          <div><span class="dot ${cur.pressure!=null ? 'dok' : 'dwarn'}"></span> Barometer</div>
+          <div><span class="dot ${cur.rainfall!=null ? 'dok' : 'dwarn'}"></span> Rain Gauge</div>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- end row 5 -->
+
+  `;
+
+  applyWidgetStates();
+
+  /* ═══════════════════════════════════════════════════════
+     RENDER CHARTS
+  ═══════════════════════════════════════════════════════ */
+  if (!hasHist) return;
+
+  /* AQI today */
+  mkChart('ch-aqi-today','line',{
+    labels: lbl24,
+    datasets:[{
+      data: aqiToday,
+      borderColor:'#00c8a0', backgroundColor:'#00c8a012',
+      borderWidth:2, fill:true, tension:.35,
+      pointRadius:2, pointHoverRadius:5,
+    }]
+  }, baseOpts({yExtra:{title:{display:true,text:'AQI',color:tickColor,font:{family:FONT,size:9}}}}));
+
+  /* AQI 7-day */
+  mkChart('ch-aqi-7d','line',{
+    labels: lbl7,
+    datasets:[
+      {
+        label:'AQI', data:aqi7,
+        borderColor:'#4db8ff', backgroundColor:'#4db8ff12',
+        borderWidth:2, fill:true, tension:.35, pointRadius:1,
+      },
+      {
+        label:'PM2.5', data:pm25_7,
+        borderColor:'#ffaa00', backgroundColor:'transparent',
+        borderWidth:1.5, borderDash:[5,4], tension:.35, pointRadius:0,
+      }
+    ]
+  }, baseOpts({
+    plugins:{legend:{display:true,labels:{color:tickColor,font:{family:FONT,size:9},boxWidth:16}}}
+  }));
+
+  /* Temp today */
+  mkChart('ch-tmp-today','line',{
+    labels: lbl24,
+    datasets:[{
+      data: tmpToday,
+      borderColor:'#ffaa00', backgroundColor:'#ffaa0012',
+      borderWidth:2, fill:true, tension:.35,
+      pointRadius:2, pointHoverRadius:5,
+    }]
+  }, baseOpts({yExtra:{title:{display:true,text:'°F',color:tickColor,font:{family:FONT,size:9}}}}));
+
+  /* Temp + Humidity 7-day */
+  mkChart('ch-tmphum-7d','line',{
+    labels: lbl7,
+    datasets:[
+      {
+        label:'Temp °F', data:tmp7,
+        borderColor:'#ffaa00', backgroundColor:'transparent',
+        borderWidth:2, tension:.35, pointRadius:1,
+        yAxisID:'yT',
+      },
+      {
+        label:'Humidity %', data:hum7,
+        borderColor:'#00c8a0', backgroundColor:'transparent',
+        borderWidth:1.5, borderDash:[5,4], tension:.35, pointRadius:0,
+        yAxisID:'yH',
+      }
+    ]
+  },{
+    responsive:true, maintainAspectRatio:false, animation:{duration:400},
+    plugins:{
+      legend:{display:true,labels:{color:tickColor,font:{family:FONT,size:9},boxWidth:16}},
+      tooltip:{
+        backgroundColor:'#1a1a2c',titleColor:'#778',bodyColor:'#c8c8d8',
+        borderColor:'#2a2a40',borderWidth:1,
+        titleFont:{family:FONT,size:10},bodyFont:{family:FONT,size:11},
+      }
+    },
+    scales:{
+      x:{grid:{color:gridColor},ticks:{color:tickColor,font:{family:FONT,size:9},maxTicksLimit:10}},
+      yT:{grid:{color:gridColor},ticks:{color:'#ffaa00',font:{family:FONT,size:9}},
+          beginAtZero:false,position:'left',
+          title:{display:true,text:'°F',color:'#ffaa00',font:{family:FONT,size:9}}},
+      yH:{grid:{color:'transparent'},ticks:{color:'#00c8a0',font:{family:FONT,size:9}},
+          beginAtZero:true,max:100,position:'right',
+          title:{display:true,text:'%RH',color:'#00c8a0',font:{family:FONT,size:9}}},
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FETCH & REFRESH
+═══════════════════════════════════════════════════════════ */
+async function refresh() {
+  try {
+    const [curRes, histRes] = await Promise.all([
+      fetch('/api/current'),
+      fetch('/api/history'),
+    ]);
+    if (!curRes.ok) throw new Error(`API ${curRes.status}`);
+
+    const cur  = await curRes.json();
+    const hist = histRes.ok ? await histRes.json() : [];
+
+    if (cur.error) throw new Error(cur.error);
+
+    document.getElementById('station-name').textContent =
+      cur._station_name || 'WEATHER STATION';
+
+    const now = new Date();
+    document.getElementById('rpt-date').textContent =
+      now.toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'2-digit'}).replace(',',' ').toUpperCase();
+    document.getElementById('rpt-updated').textContent =
+      now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
+
+    build(cur, hist);
+
+  } catch(err) {
+    document.getElementById('dash').innerHTML = `
+      <div class="card span4">
+        <div class="ch hr">CONNECTION ERROR</div>
+        <div class="cb err-box">
+          ${err.message}<br><br>
+          Check API credentials in config.json and ensure the station ID is set.
+        </div>
+      </div>`;
+    console.error(err);
+  }
+}
+
+refresh();
+setInterval(refresh, REFRESH_MS);
+
+/* ═══════════════════════════════════════════════════════════
+   WIDGET EDIT MODE
+═══════════════════════════════════════════════════════════ */
+const WIDGET_NAMES = {
+  'w-temp':      'Temperature',
+  'w-humidity':  'Humidity',
+  'w-aqi':       'AQI Gauge',
+  'w-pm':        'Particulate Matter',
+  'w-aqi-today': 'AQI Today',
+  'w-aqi-7d':    '7-Day AQI',
+  'w-tmp-today': 'Temp Today',
+  'w-tmphum':    'Temp / Humidity 7D',
+  'w-heat':      'Heat Index',
+  'w-wetbulb':   'Wet Bulb',
+  'w-wind':      'Wind',
+  'w-solar':     'Solar & UV',
+  'w-pressure':  'Pressure',
+  'w-rainfall':  'Rainfall',
+  'w-aqi-detail':'AQI Detail',
+  'w-status':    'Data Status',
+};
+
+let editMode = false;
+let _dragSrc  = null;
+
+function loadStates() {
+  try {
+    const s = localStorage.getItem('wl-widget-states');
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return Object.fromEntries(Object.keys(WIDGET_NAMES).map(k => [k, true]));
+}
+function saveStates(s) {
+  localStorage.setItem('wl-widget-states', JSON.stringify(s));
+}
+let wStates = loadStates();
+
+function applyWidgetStates() {
+  applyWidgetOrder();
+  for (const [wid, enabled] of Object.entries(wStates)) {
+    const card = document.querySelector(`[data-wid="${wid}"]`);
+    if (!card) continue;
+    card.classList.toggle('card-hidden', !enabled);
+  }
+  // Hide rows where every widget is disabled (skip in edit mode so they stay reachable)
+  document.querySelectorAll('.dash-row').forEach(row => {
+    const cards = row.querySelectorAll('[data-wid]');
+    const allHidden = Array.from(cards).every(c => c.classList.contains('card-hidden'));
+    row.style.display = (!editMode && allHidden) ? 'none' : '';
+  });
+  if (editMode) _renderOverlays();
+}
+
+function _renderOverlays() {
+  document.querySelectorAll('.edit-ov').forEach(el => el.remove());
+  document.querySelectorAll('[data-wid]').forEach(card => {
+    const wid     = card.dataset.wid;
+    const enabled = wStates[wid] !== false;
+    const ov      = document.createElement('div');
+    ov.className  = 'edit-ov';
+    ov.draggable  = true;
+    ov.innerHTML  = `
+      <div class="edit-ov-grip">&#8801;</div>
+      <div class="edit-ov-name">${WIDGET_NAMES[wid] || wid}</div>
+      <div class="edit-ov-badge">${enabled ? '● ENABLED' : '○ DISABLED'}</div>`;
+
+    ov.addEventListener('click', () => toggleWidget(wid));
+
+    ov.addEventListener('dragstart', e => {
+      _dragSrc = wid;
+      card.classList.add('drag-source');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', wid);
+      e.dataTransfer.setDragImage(card, card.offsetWidth / 2, 20);
+    });
+    ov.addEventListener('dragend', () => {
+      _dragSrc = null;
+      document.querySelectorAll('[data-wid]').forEach(c =>
+        c.classList.remove('drag-source', 'drag-over'));
+    });
+    ov.addEventListener('dragenter', e => {
+      if (!_dragSrc || _dragSrc === wid) return;
+      e.preventDefault();
+      card.classList.add('drag-over');
+    });
+    ov.addEventListener('dragover', e => {
+      if (!_dragSrc || _dragSrc === wid) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    ov.addEventListener('dragleave', e => {
+      if (!ov.contains(e.relatedTarget)) card.classList.remove('drag-over');
+    });
+    ov.addEventListener('drop', e => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      if (_dragSrc && _dragSrc !== wid) {
+        _swapCards(_dragSrc, wid);
+        saveOrder();
+      }
+    });
+
+    card.appendChild(ov);
+  });
+}
+
+function toggleWidget(wid) {
+  wStates[wid] = !wStates[wid];
+  saveStates(wStates);
+  applyWidgetStates();
+}
+
+function loadOrder() {
+  try { const s = localStorage.getItem('wl-widget-order'); return s ? JSON.parse(s) : null; }
+  catch(e) { return null; }
+}
+function saveOrder() {
+  const order = Array.from(document.querySelectorAll('[data-wid]')).map(c => c.dataset.wid);
+  localStorage.setItem('wl-widget-order', JSON.stringify(order));
+}
+function applyWidgetOrder() {
+  const saved = loadOrder();
+  if (!saved || !saved.length) return;
+  const rows     = Array.from(document.querySelectorAll('.dash-row'));
+  const allCards = Array.from(document.querySelectorAll('[data-wid]'));
+  const cardMap  = {};
+  allCards.forEach(c => cardMap[c.dataset.wid] = c);
+  const desired = [
+    ...saved.filter(w => cardMap[w]),
+    ...allCards.filter(c => !saved.includes(c.dataset.wid)).map(c => c.dataset.wid),
+  ];
+  const counts = rows.map(r => r.querySelectorAll('[data-wid]').length);
+  allCards.forEach(c => c.parentNode.removeChild(c));
+  let i = 0;
+  rows.forEach((row, ri) => {
+    for (let j = 0; j < counts[ri] && i < desired.length; j++) {
+      const c = cardMap[desired[i++]];
+      if (c) row.appendChild(c);
+    }
+  });
+}
+function _swapCards(widA, widB) {
+  const a = document.querySelector(`[data-wid="${widA}"]`);
+  const b = document.querySelector(`[data-wid="${widB}"]`);
+  if (!a || !b) return;
+  const tmp = document.createElement('span');
+  a.parentNode.insertBefore(tmp, a);
+  b.parentNode.insertBefore(a, b);
+  tmp.parentNode.insertBefore(b, tmp);
+  tmp.parentNode.removeChild(tmp);
+}
+
+function toggleEditMode() {
+  editMode = !editMode;
+  document.body.classList.toggle('edit-mode', editMode);
+  document.getElementById('edit-btn').textContent = editMode ? 'DONE' : 'EDIT';
+  if (editMode) {
+    _renderOverlays();
+  } else {
+    document.querySelectorAll('.edit-ov').forEach(el => el.remove());
+  }
+}
+</script>
+</body>
+</html>

@@ -1,54 +1,30 @@
+"""
+This script fetches current weather data from the WeatherLink API and logs it to a CSV file.
+
+Set poll interval using crontab -e:
+# Every 5 minutes:  */5 * * * * /usr/bin/python3 /path/to/script.py
+# Every 10 minutes: */10 * * * * /usr/bin/python3 /path/to/script.py
+# Every 30 minutes: */30 * * * * /usr/bin/python3 /path/to/script.py
+# Every hour:       0 * * * * /usr/bin/python3 /path/to/script.py
+"""
 import requests
 import json
 import csv
 import os
 from datetime import datetime, timedelta
 import time
-"""
-This script fetches current weather data from the WeatherLink API and logs it to a CSV file.
-
-set poll interval useing crontab -e
-# Every 5 minutes
-*/5 * * * * /usr/bin/python3 /path/to/script.py
-
-# Every 10 minutes
-*/10 * * * * /usr/bin/python3 /path/to/script.py
-
-# Every 30 minutes
-*/30 * * * * /usr/bin/python3 /path/to/script.py
-
-# Every hour
-0 * * * * /usr/bin/python3 /path/to/script.py
-
-# Every 6 hours
-0 */6 * * * /usr/bin/python3 /path/to/script.py
-
-# Every day at 9 AM
-0 9 * * * /usr/bin/python3 /path/to/script.py
-"""
-# Configuration
-now = datetime.now()
-
-# timezone adjustment
-# UTC timezone = 0 hours
-# pacific timezone = -8 hours
-# central timezone = -7 hours
-# mountain timezone = -6 hours
-# eastern timezone = -5 hours
-# daylight savings += -1 hours
-
-if time.localtime().tm_isdst and time.daylight:
-    now += timedelta(hours=-7)
-else:
-    now += timedelta(hours=-8)
-
 
 with open(os.path.join(os.path.dirname(__file__), "config.json"), "r") as f:
     config = json.load(f)
 
-API_KEY = config["api"]["key"]
+API_KEY    = config["api"]["key"]
 API_SECRET = config["api"]["secret"]
 STATION_ID = config["api"]["stationId"]
+
+_tz_offset = config.get("timezone", {}).get("offset_hours", 0)
+if time.localtime().tm_isdst and time.daylight:
+    _tz_offset += 1  # DST advances the clock by 1 hour
+now = datetime.now() + timedelta(hours=_tz_offset)
 
 # Create LOGS directory if it doesn't exist
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
