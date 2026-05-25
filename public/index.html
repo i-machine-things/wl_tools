@@ -215,6 +215,52 @@ html,body{
 /* ── MISC ─────────────────────────────────────────────── */
 hr.div{border:none;border-top:1px solid #181828;margin:8px 0}
 .label-row{display:flex;justify-content:space-between;font-size:10px;color:#334;margin-top:3px}
+
+/* ── EDIT MODE ────────────────────────────────────────── */
+.card{position:relative}
+
+/* Hidden cards disappear in normal mode */
+.card.card-hidden{display:none}
+/* In edit mode every card is visible */
+body.edit-mode .card.card-hidden{display:block}
+
+/* Clickable overlay */
+.edit-ov{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;
+  cursor:pointer;z-index:20;
+  transition:background .15s;
+}
+.card:not(.card-hidden) .edit-ov{background:rgba(0,0,0,.6)}
+.card.card-hidden     .edit-ov{background:rgba(0,0,0,.8)}
+.edit-ov:hover{filter:brightness(1.15)}
+
+.edit-ov-name{
+  font-size:11px;letter-spacing:2px;
+  text-transform:uppercase;color:#a0a0b8;
+  text-align:center;padding:0 8px;
+}
+.edit-ov-badge{
+  font-size:11px;font-weight:bold;letter-spacing:3px;
+  padding:5px 18px;border:2px solid;border-radius:2px;
+  text-transform:uppercase;
+}
+.card:not(.card-hidden) .edit-ov-badge{color:#00c8a0;border-color:#00c8a0;background:#00c8a018}
+.card.card-hidden       .edit-ov-badge{color:#ff6060;border-color:#ff6060;background:#ff606018}
+
+/* Edit button */
+#edit-btn{
+  background:transparent;
+  border:1px solid #2a2a40;
+  color:#556;
+  font-family:'Courier New',Consolas,monospace;
+  font-size:11px;letter-spacing:2px;
+  padding:5px 16px;cursor:pointer;border-radius:2px;
+  text-transform:uppercase;transition:all .2s;
+}
+#edit-btn:hover{border-color:#4db8ff;color:#4db8ff}
+body.edit-mode #edit-btn{border-color:#00c8a0;color:#00c8a0;background:#00c8a015}
 </style>
 </head>
 <body>
@@ -227,7 +273,10 @@ hr.div{border:none;border-top:1px solid #181828;margin:8px 0}
       Report: <span id="rpt-date">--</span> &nbsp;|&nbsp; Updated: <span id="rpt-updated">--</span>
     </div>
   </div>
-  <div id="clock">--:--:-- --</div>
+  <div style="display:flex;align-items:center;gap:16px;flex-shrink:0">
+    <button id="edit-btn" onclick="toggleEditMode()">EDIT</button>
+    <div id="clock">--:--:-- --</div>
+  </div>
 </div>
 
 <!-- DASHBOARD GRID -->
@@ -431,7 +480,7 @@ function build(cur, hist) {
 
     <!-- ── Row 1: Temp, Humidity, AQI gauge, AQI detail ── -->
 
-    <div class="card">
+    <div class="card" data-wid="w-temp">
       <div class="ch hb">TEMPERATURE</div>
       <div class="cs">Indoor Conditions</div>
       <div class="cb">
@@ -454,7 +503,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-wid="w-humidity">
       <div class="ch ht">HUMIDITY</div>
       <div class="cs">Relative Humidity &amp; Dew Point</div>
       <div class="cb">
@@ -477,7 +526,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-wid="w-aqi">
       <div class="ch ${ahdr}">CURRENT AQI</div>
       <div class="cs">Air Quality Index &middot; US EPA &middot; PM2.5</div>
       <div class="gauge-wrap">
@@ -490,7 +539,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-wid="w-pm">
       <div class="ch hp">PARTICULATE MATTER</div>
       <div class="cs">Indoor &middot; &micro;g/m&sup3;</div>
       <div class="cb">
@@ -508,7 +557,7 @@ function build(cur, hist) {
 
     <!-- ── Row 2: AQI today, 7-day AQI ── -->
 
-    <div class="card span2">
+    <div class="card span2" data-wid="w-aqi-today">
       <div class="ch ht">AIR QUALITY INDEX — TODAY</div>
       <div class="cs">Hourly Trend &middot; PM2.5 AQI</div>
       <div class="cb">
@@ -518,7 +567,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    <div class="card span2">
+    <div class="card span2" data-wid="w-aqi-7d">
       <div class="ch hb">7-DAY AIR QUALITY INDEX</div>
       <div class="cs">Historical Trend &middot; AQI &amp; PM2.5</div>
       <div class="cb">
@@ -530,7 +579,7 @@ function build(cur, hist) {
 
     <!-- ── Row 3: Temp today, 7-day temp/hum ── -->
 
-    <div class="card span2">
+    <div class="card span2" data-wid="w-tmp-today">
       <div class="ch ha">TEMPERATURE TREND — TODAY</div>
       <div class="cs">Hourly &middot; &deg;F</div>
       <div class="cb">
@@ -540,7 +589,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    <div class="card span2">
+    <div class="card span2" data-wid="w-tmphum">
       <div class="ch hw">7-DAY TEMP &amp; HUMIDITY</div>
       <div class="cs">Historical &middot; &deg;F &amp; %RH</div>
       <div class="cb">
@@ -552,7 +601,7 @@ function build(cur, hist) {
 
     <!-- ── Row 4: Heat index, Wet bulb, Wind, Solar/UV, Pressure/Rain ── -->
 
-    <div class="card">
+    <div class="card" data-wid="w-heat">
       <div class="ch ha">HEAT INDEX</div>
       <div class="cs">Apparent Temperature</div>
       <div class="cb" style="text-align:center;padding:16px 12px">
@@ -571,7 +620,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-wid="w-wetbulb">
       <div class="ch hg">WET BULB</div>
       <div class="cs">Evaporative Cooling Limit</div>
       <div class="cb" style="text-align:center;padding:16px 12px">
@@ -592,7 +641,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-wid="w-wind">
       <div class="ch hb">WIND</div>
       <div class="cs">Speed &amp; Direction</div>
       <div class="cb wind-center">
@@ -613,7 +662,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-wid="w-solar">
       <div class="ch ${cur.solar_rad != null ? 'ha' : 'hw'}">SOLAR &amp; UV</div>
       <div class="cs">Radiation &amp; UV Index</div>
       <div class="cb" style="text-align:center;padding:10px 12px">
@@ -633,7 +682,7 @@ function build(cur, hist) {
 
     <!-- ── Row 5: Pressure, Rainfall, AQI detail, Data status ── -->
 
-    <div class="card">
+    <div class="card" data-wid="w-pressure">
       <div class="ch hw">BAROMETRIC PRESSURE</div>
       <div class="cs">Sea Level</div>
       <div class="cb" style="text-align:center;padding:16px 12px">
@@ -650,7 +699,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-wid="w-rainfall">
       <div class="ch hb">RAINFALL</div>
       <div class="cs">Daily Accumulation</div>
       <div class="cb" style="text-align:center;padding:16px 12px">
@@ -668,7 +717,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-wid="w-aqi-detail">
       <div class="ch ${ahdr}">AQI DETAIL</div>
       <div class="cs">Index Breakdown &middot; US EPA Scale</div>
       <div class="cb">
@@ -691,7 +740,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" data-wid="w-status">
       <div class="ch hg">DATA STATUS</div>
       <div class="cs">Logger &amp; Connection</div>
       <div class="cb">
@@ -709,6 +758,8 @@ function build(cur, hist) {
     </div>
 
   `;
+
+  applyWidgetStates();
 
   /* ═══════════════════════════════════════════════════════
      RENDER CHARTS
@@ -837,6 +888,83 @@ async function refresh() {
 
 refresh();
 setInterval(refresh, REFRESH_MS);
+
+/* ═══════════════════════════════════════════════════════════
+   WIDGET EDIT MODE
+═══════════════════════════════════════════════════════════ */
+const WIDGET_NAMES = {
+  'w-temp':      'Temperature',
+  'w-humidity':  'Humidity',
+  'w-aqi':       'AQI Gauge',
+  'w-pm':        'Particulate Matter',
+  'w-aqi-today': 'AQI Today',
+  'w-aqi-7d':    '7-Day AQI',
+  'w-tmp-today': 'Temp Today',
+  'w-tmphum':    'Temp / Humidity 7D',
+  'w-heat':      'Heat Index',
+  'w-wetbulb':   'Wet Bulb',
+  'w-wind':      'Wind',
+  'w-solar':     'Solar & UV',
+  'w-pressure':  'Pressure',
+  'w-rainfall':  'Rainfall',
+  'w-aqi-detail':'AQI Detail',
+  'w-status':    'Data Status',
+};
+
+let editMode = false;
+
+function loadStates() {
+  try {
+    const s = localStorage.getItem('wl-widget-states');
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return Object.fromEntries(Object.keys(WIDGET_NAMES).map(k => [k, true]));
+}
+function saveStates(s) {
+  localStorage.setItem('wl-widget-states', JSON.stringify(s));
+}
+let wStates = loadStates();
+
+function applyWidgetStates() {
+  for (const [wid, enabled] of Object.entries(wStates)) {
+    const card = document.querySelector(`[data-wid="${wid}"]`);
+    if (!card) continue;
+    card.classList.toggle('card-hidden', !enabled);
+  }
+  if (editMode) _renderOverlays();
+}
+
+function _renderOverlays() {
+  document.querySelectorAll('.edit-ov').forEach(el => el.remove());
+  document.querySelectorAll('[data-wid]').forEach(card => {
+    const wid     = card.dataset.wid;
+    const enabled = wStates[wid] !== false;
+    const ov      = document.createElement('div');
+    ov.className  = 'edit-ov';
+    ov.innerHTML  = `
+      <div class="edit-ov-name">${WIDGET_NAMES[wid] || wid}</div>
+      <div class="edit-ov-badge">${enabled ? '● ENABLED' : '○ DISABLED'}</div>`;
+    ov.addEventListener('click', () => toggleWidget(wid));
+    card.appendChild(ov);
+  });
+}
+
+function toggleWidget(wid) {
+  wStates[wid] = !wStates[wid];
+  saveStates(wStates);
+  applyWidgetStates();
+}
+
+function toggleEditMode() {
+  editMode = !editMode;
+  document.body.classList.toggle('edit-mode', editMode);
+  document.getElementById('edit-btn').textContent = editMode ? 'DONE' : 'EDIT';
+  if (editMode) {
+    _renderOverlays();
+  } else {
+    document.querySelectorAll('.edit-ov').forEach(el => el.remove());
+  }
+}
 </script>
 </body>
 </html>

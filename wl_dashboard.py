@@ -1,174 +1,193 @@
 #!/usr/bin/env python3
-"""
-Weather Station Dashboard Server
-Run:  python3 wl_dashboard.py
-Open: http://localhost:8081
+"""wl_dashboard.py — HTTP server for WeatherLink Dashboard.
+
+Serves public/ as static files and provides a small read-only API:
+  GET /api/current  — fetch live conditions from WeatherLink API v2
+  GET /api/history  — return last 7 days of logged data from LOGS/
 """
 
-from http.server import HTTPServer, BaseHTTPRequestHandler
+import glob
 import json
 import os
-import glob
-import requests
-from datetime import datetime, timedelta
+import threading
+from datetime import datetime, timedelta, timezone
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from urllib.parse import urlparse
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-LOGS_DIR   = os.path.join(SCRIPT_DIR, "LOGS")
-HTML_PATH  = os.path.join(SCRIPT_DIR, "dashboard.html")
-PORT       = 8081
+import requests as _req
 
-with open(os.path.join(SCRIPT_DIR, "config.json"), "r") as f:
+BASE_DIR   = Path(__file__).parent
+PUBLIC_DIR = BASE_DIR / 'public'
+LOGS_DIR   = BASE_DIR / 'LOGS'
+PORT       = int(os.environ.get('PORT', 8081))
+
+with open(BASE_DIR / 'config.json') as f:
     _cfg = json.load(f)
 
-API_KEY    = _cfg["api"]["key"]
-API_SECRET = _cfg["api"]["secret"]
-STATION_ID = _cfg["api"]["stationId"]
+_API_KEY    = _cfg['api']['key']
+_API_SECRET = _cfg['api']['secret']
+_STATION_ID = _cfg['api']['stationId']
 
+_station_name_lock  = threading.Lock()
 _station_name_cache = None
 
+# Simple 60-second response cache so multiple open tabs don't hammer the API.
+_current_lock  = threading.Lock()
+_current_cache = None          # (fetched_at: datetime, data: dict)
+_CACHE_TTL     = 60            # seconds
 
-def _headers():
-    return {"x-api-secret": API_SECRET, "Content-Type": "application/json"}
+
+def _api_headers():
+    return {'x-api-secret': _API_SECRET, 'Content-Type': 'application/json'}
 
 
 def _station_name():
     global _station_name_cache
-    if _station_name_cache:
-        return _station_name_cache
-    try:
-        url  = f"https://api.weatherlink.com/v2/stations?api-key={API_KEY}"
-        resp = requests.get(url, headers=_headers(), timeout=10)
-        resp.raise_for_status()
-        stations = resp.json().get("stations", [])
-        for s in stations:
-            if str(s.get("station_id")) == str(STATION_ID):
-                _station_name_cache = s.get("station_name", "WEATHER STATION").upper()
-                return _station_name_cache
-        if stations:
-            _station_name_cache = stations[0].get("station_name", "WEATHER STATION").upper()
+    with _station_name_lock:
+        if _station_name_cache:
             return _station_name_cache
-    except Exception:
-        pass
-    _station_name_cache = "WEATHER STATION"
-    return _station_name_cache
-
-
-def fetch_current():
-    url = f"https://api.weatherlink.com/v2/current/{STATION_ID}?api-key={API_KEY}"
-    try:
-        resp = requests.get(url, headers=_headers(), timeout=10)
-        resp.raise_for_status()
-        raw = resp.json()
-    except Exception as e:
-        return {"error": str(e)}
-
-    data = None
-    if "sensors" in raw:
-        for sensor in raw.get("sensors", []):
-            if sensor.get("data"):
-                sd = sensor["data"][0]
-                if "temp" in sd and "hum" in sd:
-                    data = sd
-                    break
-    elif "data" in raw:
-        arr = raw.get("data", [])
-        data = arr[0] if arr else None
-
-    if not data:
-        return {"error": "No sensor data in API response"}
-
-    return {
-        "_station_name": _station_name(),
-        "timestamp":      datetime.utcnow().isoformat(),
-        "temp":           data.get("temp"),
-        "humidity":       data.get("hum"),
-        "dew_point":      data.get("dew_point"),
-        "heat_index":     data.get("heat_index"),
-        "wet_bulb":       data.get("wet_bulb"),
-        "pm_1":           data.get("pm_1"),
-        "pm_2p5":         data.get("pm_2p5"),
-        "pm_10":          data.get("pm_10"),
-        "aqi_val":        data.get("aqi_val"),
-        "aqi_desc":       data.get("aqi_desc"),
-        "wind_speed":     data.get("wind_speed_last"),
-        "wind_gust":      data.get("wind_speed_hi_last_2_min"),
-        "wind_dir":       data.get("wind_dir_scalar_avg_last_2_min"),
-        "pressure":       data.get("bar_sea_level"),
-        "rainfall":       data.get("rain_day_in"),
-        "solar_rad":      data.get("solar_rad"),
-        "uv_index":       data.get("uv_index"),
-        "temp_in":        data.get("temp_in"),
-        "hum_in":         data.get("hum_in"),
-    }
-
-
-def fetch_history(days=7):
-    if not os.path.exists(LOGS_DIR):
-        return []
-    cutoff  = datetime.utcnow() - timedelta(days=days)
-    records = []
-    files   = sorted(glob.glob(os.path.join(LOGS_DIR, "weather_data_*.json")))
-    for fp in files[-3:]:
         try:
-            with open(fp) as f:
-                records.extend(json.load(f))
+            r = _req.get(
+                f'https://api.weatherlink.com/v2/stations?api-key={_API_KEY}',
+                headers=_api_headers(), timeout=10,
+            )
+            r.raise_for_status()
+            for s in r.json().get('stations', []):
+                if str(s.get('station_id')) == str(_STATION_ID):
+                    _station_name_cache = s.get('station_name', 'WEATHER STATION').upper()
+                    return _station_name_cache
+            stations = r.json().get('stations', [])
+            if stations:
+                _station_name_cache = stations[0].get('station_name', 'WEATHER STATION').upper()
+                return _station_name_cache
+        except Exception:
+            pass
+        _station_name_cache = 'WEATHER STATION'
+        return _station_name_cache
+
+
+def _fetch_current():
+    """Fetch live conditions from WeatherLink API v2, with 60-second cache."""
+    global _current_cache
+    with _current_lock:
+        if _current_cache:
+            age = (datetime.now(timezone.utc).replace(tzinfo=None) - _current_cache[0]).total_seconds()
+            if age < _CACHE_TTL:
+                return _current_cache[1]
+
+        try:
+            r = _req.get(
+                f'https://api.weatherlink.com/v2/current/{_STATION_ID}?api-key={_API_KEY}',
+                headers=_api_headers(), timeout=10,
+            )
+            r.raise_for_status()
+            raw = r.json()
+        except Exception as e:
+            return {'error': str(e)}
+
+        data = None
+        if 'sensors' in raw:
+            for sensor in raw.get('sensors', []):
+                if sensor.get('data'):
+                    sd = sensor['data'][0]
+                    if 'temp' in sd and 'hum' in sd:
+                        data = sd
+                        break
+        elif 'data' in raw:
+            arr = raw.get('data', [])
+            data = arr[0] if arr else None
+
+        if not data:
+            return {'error': 'No sensor data in API response'}
+
+        result = {
+            '_station_name': _station_name(),
+            'timestamp':     datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
+            'temp':          data.get('temp'),
+            'humidity':      data.get('hum'),
+            'dew_point':     data.get('dew_point'),
+            'heat_index':    data.get('heat_index'),
+            'wet_bulb':      data.get('wet_bulb'),
+            'pm_1':          data.get('pm_1'),
+            'pm_2p5':        data.get('pm_2p5'),
+            'pm_10':         data.get('pm_10'),
+            'aqi_val':       data.get('aqi_val'),
+            'aqi_desc':      data.get('aqi_desc'),
+            'wind_speed':    data.get('wind_speed_last'),
+            'wind_gust':     data.get('wind_speed_hi_last_2_min'),
+            'wind_dir':      data.get('wind_dir_scalar_avg_last_2_min'),
+            'pressure':      data.get('bar_sea_level'),
+            'rainfall':      data.get('rain_day_in'),
+            'solar_rad':     data.get('solar_rad'),
+            'uv_index':      data.get('uv_index'),
+            'temp_in':       data.get('temp_in'),
+            'hum_in':        data.get('hum_in'),
+        }
+        _current_cache = (datetime.now(timezone.utc).replace(tzinfo=None), result)
+        return result
+
+
+def _fetch_history(days=7):
+    """Return up to 600 records from the last `days` days of LOGS/*.json files."""
+    if not LOGS_DIR.exists():
+        return []
+    cutoff  = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+    records = []
+    for fp in sorted(LOGS_DIR.glob('weather_data_*.json'))[-3:]:
+        try:
+            records.extend(json.loads(fp.read_text()))
         except Exception:
             pass
     out = []
     for r in records:
         try:
-            ts = datetime.fromisoformat(r.get("timestamp", ""))
-            if ts >= cutoff:
+            if datetime.fromisoformat(r.get('timestamp', '')) >= cutoff:
                 out.append(r)
         except Exception:
             out.append(r)
     return out[-600:]
 
 
-class Handler(BaseHTTPRequestHandler):
-    def log_message(self, *args):
-        pass
+class Handler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=str(PUBLIC_DIR), **kwargs)
 
-    def _json(self, data, status=200):
-        body = json.dumps(data).encode()
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
-        self.wfile.write(body)
-
-    def _html(self, body_bytes, status=200):
-        self.send_response(status)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Content-Length", str(len(body_bytes)))
-        self.end_headers()
-        self.wfile.write(body_bytes)
+    # ── Routing ───────────────────────────────────────────────────────────────
 
     def do_GET(self):
         path = urlparse(self.path).path
-        if path in ("/", "/dashboard.html"):
-            try:
-                with open(HTML_PATH, "rb") as f:
-                    self._html(f.read())
-            except FileNotFoundError:
-                self._json({"error": "dashboard.html not found"}, 404)
-        elif path == "/api/current":
-            self._json(fetch_current())
-        elif path == "/api/history":
-            self._json(fetch_history())
+        if path == '/api/current':
+            self._get_current()
+        elif path == '/api/history':
+            self._get_history()
         else:
-            self._json({"error": "not found"}, 404)
+            super().do_GET()
+
+    # ── Handlers ─────────────────────────────────────────────────────────────
+
+    def _get_current(self):
+        self._json(200, _fetch_current())
+
+    def _get_history(self):
+        self._json(200, _fetch_history())
+
+    # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def _json(self, status, data):
+        body = json.dumps(data).encode()
+        self.send_response(status)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, fmt, *args):
+        print(f'[{self.log_date_time_string()}] {fmt % args}', flush=True)
 
 
-if __name__ == "__main__":
-    if STATION_ID in ("YOUR_STATION_ID", ""):
-        print("Warning: STATION_ID not configured in config.json")
-    server = HTTPServer(("0.0.0.0", PORT), Handler)
-    print(f"  Weather Dashboard  →  http://localhost:{PORT}")
-    print("  Press Ctrl+C to stop")
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print("\nStopped.")
+if __name__ == '__main__':
+    PUBLIC_DIR.mkdir(exist_ok=True)
+    httpd = ThreadingHTTPServer(('', PORT), Handler)
+    print(f'WeatherLink Dashboard on :{PORT}  (public/ → /)', flush=True)
+    httpd.serve_forever()

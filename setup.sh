@@ -287,7 +287,85 @@ if [ "$EMAIL_CONFIGURED" = true ]; then
     fi
 fi
 
-# Step 8: Summary
+# Step 8: Dashboard Server
+print_header "Step 8: Setting Up Dashboard Server"
+print_info "The dashboard serves a live weather monitor at http://<host>:8081"
+read -p "Set up the dashboard to run as a systemd service? (y/n) " -n 1 -r
+echo
+
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    DASHBOARD_PATH="$SCRIPT_DIR/wl_dashboard.py"
+    SERVICE_NAME="wl-dashboard"
+
+    # Prefer user-level systemd (no sudo needed); fall back to system-level.
+    if systemctl --user daemon-reload &>/dev/null 2>&1; then
+        SERVICE_DIR="$HOME/.config/systemd/user"
+        SYSTEMCTL="systemctl --user"
+        WANTS_SYSTEM=false
+    else
+        SERVICE_DIR="/etc/systemd/system"
+        SYSTEMCTL="sudo systemctl"
+        WANTS_SYSTEM=true
+    fi
+
+    mkdir -p "$SERVICE_DIR"
+    SERVICE_FILE="$SERVICE_DIR/${SERVICE_NAME}.service"
+
+    if [ "$WANTS_SYSTEM" = false ]; then
+        cat > "$SERVICE_FILE" << EOF
+[Unit]
+Description=WeatherLink Dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=$SCRIPT_DIR
+ExecStart=$PYTHON_PATH $DASHBOARD_PATH
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+EOF
+        $SYSTEMCTL daemon-reload
+        $SYSTEMCTL enable "$SERVICE_NAME"
+        $SYSTEMCTL restart "$SERVICE_NAME"
+    else
+        sudo tee "$SERVICE_FILE" > /dev/null << EOF
+[Unit]
+Description=WeatherLink Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=$SCRIPT_DIR
+ExecStart=$PYTHON_PATH $DASHBOARD_PATH
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        sudo systemctl daemon-reload
+        sudo systemctl enable "$SERVICE_NAME"
+        sudo systemctl restart "$SERVICE_NAME"
+    fi
+
+    print_success "Dashboard service installed and started"
+    print_info "Dashboard URL: http://$(hostname -I | awk '{print $1}' 2>/dev/null || echo localhost):8081"
+    print_info "Service commands:"
+    echo "  Status:  $SYSTEMCTL status $SERVICE_NAME"
+    echo "  Logs:    journalctl -u $SERVICE_NAME -f"
+    echo "  Restart: $SYSTEMCTL restart $SERVICE_NAME"
+    echo "  Stop:    $SYSTEMCTL stop $SERVICE_NAME"
+    DASHBOARD_CONFIGURED=true
+else
+    print_info "Dashboard setup skipped. Run manually with: python3 $SCRIPT_DIR/wl_dashboard.py"
+    DASHBOARD_CONFIGURED=false
+fi
+
+# Step 9: Summary
 print_header "Installation Complete!"
 print_success "WeatherLink Data Logger is now installed and configured"
 
@@ -311,8 +389,14 @@ print_info "Manual commands:"
 echo "  Fetch data now:     python3 $FULL_LOGGER_PATH"
 echo "  List stations:      python3 $FULL_LOGGER_PATH --list-stations"
 echo "  Send email now:     python3 $FULL_REPORT_PATH"
+echo "  Start dashboard:    python3 $SCRIPT_DIR/wl_dashboard.py"
 echo "  View cron jobs:     crontab -l"
 echo "  Edit cron jobs:     crontab -e"
+
+if [ "$DASHBOARD_CONFIGURED" = true ]; then
+    echo
+    print_info "Dashboard: http://$(hostname -I | awk '{print $1}' 2>/dev/null || echo localhost):8081"
+fi
 
 echo
 print_success "Installation finished! Your weather logger is ready to run."
