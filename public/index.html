@@ -266,6 +266,13 @@ body.edit-mode .card.card-hidden{display:block}
 }
 #edit-btn:hover{border-color:#4db8ff;color:#4db8ff}
 body.edit-mode #edit-btn{border-color:#00c8a0;color:#00c8a0;background:#00c8a015}
+
+/* ── DRAG & DROP ──────────────────────────────────────── */
+body.edit-mode .edit-ov{cursor:grab}
+body.edit-mode .edit-ov:active{cursor:grabbing}
+.edit-ov-grip{font-size:22px;opacity:.45;color:#4db8ff;margin-bottom:6px;line-height:1}
+[data-wid].drag-source{opacity:.3;border-style:dashed;border-color:#2a2a50}
+[data-wid].drag-over{outline:2px solid #4db8ff;outline-offset:-2px;border-color:#4db8ff}
 </style>
 </head>
 <body>
@@ -932,6 +939,7 @@ const WIDGET_NAMES = {
 };
 
 let editMode = false;
+let _dragSrc  = null;
 
 function loadStates() {
   try {
@@ -946,6 +954,7 @@ function saveStates(s) {
 let wStates = loadStates();
 
 function applyWidgetStates() {
+  applyWidgetOrder();
   for (const [wid, enabled] of Object.entries(wStates)) {
     const card = document.querySelector(`[data-wid="${wid}"]`);
     if (!card) continue;
@@ -967,10 +976,48 @@ function _renderOverlays() {
     const enabled = wStates[wid] !== false;
     const ov      = document.createElement('div');
     ov.className  = 'edit-ov';
+    ov.draggable  = true;
     ov.innerHTML  = `
+      <div class="edit-ov-grip">&#8801;</div>
       <div class="edit-ov-name">${WIDGET_NAMES[wid] || wid}</div>
       <div class="edit-ov-badge">${enabled ? '● ENABLED' : '○ DISABLED'}</div>`;
+
     ov.addEventListener('click', () => toggleWidget(wid));
+
+    ov.addEventListener('dragstart', e => {
+      _dragSrc = wid;
+      card.classList.add('drag-source');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', wid);
+      e.dataTransfer.setDragImage(card, card.offsetWidth / 2, 20);
+    });
+    ov.addEventListener('dragend', () => {
+      _dragSrc = null;
+      document.querySelectorAll('[data-wid]').forEach(c =>
+        c.classList.remove('drag-source', 'drag-over'));
+    });
+    ov.addEventListener('dragenter', e => {
+      if (!_dragSrc || _dragSrc === wid) return;
+      e.preventDefault();
+      card.classList.add('drag-over');
+    });
+    ov.addEventListener('dragover', e => {
+      if (!_dragSrc || _dragSrc === wid) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    ov.addEventListener('dragleave', e => {
+      if (!ov.contains(e.relatedTarget)) card.classList.remove('drag-over');
+    });
+    ov.addEventListener('drop', e => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      if (_dragSrc && _dragSrc !== wid) {
+        _swapCards(_dragSrc, wid);
+        saveOrder();
+      }
+    });
+
     card.appendChild(ov);
   });
 }
@@ -979,6 +1026,46 @@ function toggleWidget(wid) {
   wStates[wid] = !wStates[wid];
   saveStates(wStates);
   applyWidgetStates();
+}
+
+function loadOrder() {
+  try { const s = localStorage.getItem('wl-widget-order'); return s ? JSON.parse(s) : null; }
+  catch(e) { return null; }
+}
+function saveOrder() {
+  const order = Array.from(document.querySelectorAll('[data-wid]')).map(c => c.dataset.wid);
+  localStorage.setItem('wl-widget-order', JSON.stringify(order));
+}
+function applyWidgetOrder() {
+  const saved = loadOrder();
+  if (!saved || !saved.length) return;
+  const rows     = Array.from(document.querySelectorAll('.dash-row'));
+  const allCards = Array.from(document.querySelectorAll('[data-wid]'));
+  const cardMap  = {};
+  allCards.forEach(c => cardMap[c.dataset.wid] = c);
+  const desired = [
+    ...saved.filter(w => cardMap[w]),
+    ...allCards.filter(c => !saved.includes(c.dataset.wid)).map(c => c.dataset.wid),
+  ];
+  const counts = rows.map(r => r.querySelectorAll('[data-wid]').length);
+  allCards.forEach(c => c.parentNode.removeChild(c));
+  let i = 0;
+  rows.forEach((row, ri) => {
+    for (let j = 0; j < counts[ri] && i < desired.length; j++) {
+      const c = cardMap[desired[i++]];
+      if (c) row.appendChild(c);
+    }
+  });
+}
+function _swapCards(widA, widB) {
+  const a = document.querySelector(`[data-wid="${widA}"]`);
+  const b = document.querySelector(`[data-wid="${widB}"]`);
+  if (!a || !b) return;
+  const tmp = document.createElement('span');
+  a.parentNode.insertBefore(tmp, a);
+  b.parentNode.insertBefore(a, b);
+  tmp.parentNode.insertBefore(b, tmp);
+  tmp.parentNode.removeChild(tmp);
 }
 
 function toggleEditMode() {
