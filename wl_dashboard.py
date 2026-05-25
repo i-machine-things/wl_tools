@@ -153,7 +153,7 @@ def _fetch_history(days=7):
             if datetime.fromisoformat(r.get('timestamp', '')) >= cutoff:
                 out.append(r)
         except Exception:
-            out.append(r)
+            continue
     return out[-600:]
 
 

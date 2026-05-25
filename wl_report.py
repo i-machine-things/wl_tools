@@ -1,3 +1,11 @@
+"""
+Email CSV weather data script for WeatherLink data logger.
+Sends the weather_data.csv file as an attachment to multiple recipients.
+Use with crontab to send reports at desired intervals:
+# Daily email at 8 PM:         0 20 * * * /usr/bin/python3 /path/to/wl_report.py
+# Weekly email Monday 9 AM:    0 9 * * 1 /usr/bin/python3 /path/to/wl_report.py
+# Every morning at 7 AM:       0 7 * * * /usr/bin/python3 /path/to/wl_report.py
+"""
 import json
 import smtplib
 import os
@@ -6,30 +14,19 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
-"""
-Email CSV weather data script for WeatherLink data logger.
-Sends the weather_data.csv file as an attachment to multiple recipients.
-Use with crontab to send reports at desired intervals:
-# Daily email at 8 PM
-0 20 * * * /usr/bin/python3 /path/to/email_csv.py
-# Weekly email every Monday at 9 AM
-0 9 * * 1 /usr/bin/python3 /path/to/email_csv.py
-# Every morning at 7 AM
-0 7 * * * /usr/bin/python3 /path/to/email_csv.py
-"""
-# Email Configuration
-now = datetime.now()
+
 with open(os.path.join(os.path.dirname(__file__), "config.json")) as f:
-    config = json.load(f)   
+    config = json.load(f)
 
-
-SENDER_EMAIL = config["email"]["sender_email"]
-SENDER_PASSWORD = config["email"]["sender_password"]  # Use app-specific password for Gmail
+now = datetime.now()
+SENDER_EMAIL    = config["email"]["sender_email"]
+SENDER_PASSWORD = config["email"]["sender_password"]
 RECIPIENT_EMAIL = config["email"]["recipient_email"]
-SMTP_SERVER = config["email"]["smtp_server"]
-SMTP_PORT = config["email"]["smtp_port"]
-# Log file path
-last_month = datetime.now() - timedelta(days=datetime.now().day)
+SMTP_SERVER     = config["email"]["smtp_server"]
+SMTP_PORT       = config["email"]["smtp_port"]
+
+# First day of this month minus one day = last day of previous month
+last_month = now.replace(day=1) - timedelta(days=1)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGS_DIR = os.path.join(SCRIPT_DIR, 'LOGS')
