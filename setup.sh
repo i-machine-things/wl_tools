@@ -88,15 +88,18 @@ print_success "Python dependencies installed"
 
 # Step 4: Configure API credentials
 print_header "Step 4: Configure WeatherLink API Credentials"
-print_info "You need your API credentials from https://weatherlink.com/account/api"
 
-read -p "Enter your API Key: " API_KEY
-read -p "Enter your API Secret: " API_SECRET
-
-# Create or update config.json
 CONFIG_FILE="$SCRIPT_DIR/config.json"
 
-if [ ! -f "$CONFIG_FILE" ]; then
+if [ -f "$CONFIG_FILE" ]; then
+    print_success "config.json already exists — skipping credential setup"
+    print_info "To reconfigure, delete config.json and re-run setup.sh"
+else
+    print_info "You need your API credentials from https://weatherlink.com/account/api"
+
+    read -p "Enter your API Key: " API_KEY
+    read -p "Enter your API Secret: " API_SECRET
+
     cat > "$CONFIG_FILE" << EOF
 {
     "api":{
@@ -111,52 +114,41 @@ if [ ! -f "$CONFIG_FILE" ]; then
         "recipient_email": ["example1@gmail.com", "example2@gmail.com"],
         "smtp_server": "smtp.gmail.com",
         "smtp_port": 587
-    }    
+    }
 }
 EOF
     print_success "Created config.json"
-fi
 
-# Update API credentials in config.json using Python
-python3 << EOF
+    python3 << EOF
 import json
-import os
-
 config_file = "$CONFIG_FILE"
 with open(config_file, 'r') as f:
     config = json.load(f)
-
 config['api']['key'] = "$API_KEY"
 config['api']['secret'] = "$API_SECRET"
-
 with open(config_file, 'w') as f:
     json.dump(config, f, indent=4)
-
 print("API credentials updated in config.json")
 EOF
 
-print_info "Listing available stations..."
-python3 "$SCRIPT_DIR/wl_logger.py" --list-stations 2>/dev/null || print_warning "Could not list stations. Make sure credentials are correct."
+    print_info "Listing available stations..."
+    python3 "$SCRIPT_DIR/wl_logger.py" --list-stations 2>/dev/null || print_warning "Could not list stations. Make sure credentials are correct."
 
-read -p "Enter your Station ID: " STATION_ID
+    read -p "Enter your Station ID: " STATION_ID
 
-# Update Station ID in config.json
-python3 << EOF
+    python3 << EOF
 import json
-
 config_file = "$CONFIG_FILE"
 with open(config_file, 'r') as f:
     config = json.load(f)
-
 config['api']['stationId'] = "$STATION_ID"
-
 with open(config_file, 'w') as f:
     json.dump(config, f, indent=4)
-
 print("Station ID updated in config.json")
 EOF
 
-print_success "API credentials configured"
+    print_success "API credentials configured"
+fi
 
 # Step 5: Configure email (optional)
 print_header "Step 5: Configure Email (Optional)"
