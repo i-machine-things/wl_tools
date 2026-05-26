@@ -289,9 +289,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     DASHBOARD_PATH="$SCRIPT_DIR/wl_dashboard.py"
     SERVICE_NAME="wl-dashboard"
 
+    REAL_USER="${SUDO_USER:-$USER}"
+    REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+
     # Prefer user-level systemd (no sudo needed); fall back to system-level.
     if systemctl --user daemon-reload &>/dev/null 2>&1; then
-        SERVICE_DIR="$HOME/.config/systemd/user"
+        SERVICE_DIR="$REAL_HOME/.config/systemd/user"
         SYSTEMCTL="systemctl --user"
         WANTS_SYSTEM=false
     else
@@ -319,6 +322,7 @@ RestartSec=5
 [Install]
 WantedBy=default.target
 EOF
+        loginctl enable-linger "$REAL_USER"
         $SYSTEMCTL daemon-reload
         $SYSTEMCTL enable "$SERVICE_NAME"
         $SYSTEMCTL restart "$SERVICE_NAME"
@@ -330,7 +334,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=$USER
+User=$REAL_USER
 WorkingDirectory=$SCRIPT_DIR
 ExecStart=$PYTHON_PATH $DASHBOARD_PATH
 Restart=on-failure
