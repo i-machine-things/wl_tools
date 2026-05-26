@@ -319,6 +319,7 @@ RestartSec=5
 [Install]
 WantedBy=default.target
 EOF
+        loginctl enable-linger "$USER"
         $SYSTEMCTL daemon-reload
         $SYSTEMCTL enable "$SERVICE_NAME"
         $SYSTEMCTL restart "$SERVICE_NAME"
