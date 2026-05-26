@@ -1,0 +1,34 @@
+services:
+  wl-tools:
+    image: wl-tools:latest
+    build: .
+    container_name: wl-tools
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    volumes:
+      # Log files are written here so they survive container restarts
+      - ./LOGS:/app/LOGS
+    environment:
+      # ── WeatherLink API (required) ─────────────────────────────────────────
+      # Find these at weatherlink.com > Account > API Keys
+      - WL_API_KEY=YOUR_API_KEY
+      - WL_API_SECRET=YOUR_API_SECRET
+      - WL_STATION_ID=YOUR_STATION_ID
+
+      # ── Timezone ───────────────────────────────────────────────────────────
+      # Offset in hours from UTC (e.g. -5 EST, -8 PST, 1 CET)
+      - WL_TIMEZONE_OFFSET=-8
+      # Full tz name for DST detection — must match the region above
+      # List: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+      - TZ=America/Los_Angeles
+
+      # ── Dashboard port ─────────────────────────────────────────────────────
+      - PORT=8081
+
+      # ── Email reports (optional) ───────────────────────────────────────────
+      # Leave blank to disable. Use a Gmail App Password, not your account password.
+      - WL_EMAIL_SENDER=
+      - WL_EMAIL_PASSWORD=
+      # Comma-separated list of recipients
+      - WL_EMAIL_RECIPIENTS=

@@ -1,0 +1,7 @@
+.git
+LOGS/
+config.json
+.env
+*.pyc
+__pycache__
+.gitignore
