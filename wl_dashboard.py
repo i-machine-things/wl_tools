@@ -10,7 +10,6 @@ import glob
 import json
 import os
 import threading
-import time as _time
 from datetime import datetime, timedelta
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -32,13 +31,6 @@ _STATION_ID = _cfg['api']['stationId']
 
 _station_name_lock  = threading.Lock()
 _station_name_cache = None
-
-def _local_now():
-    """Return current time in the configured local timezone, matching wl_logger.py."""
-    offset = _cfg.get('timezone', {}).get('offset_hours', 0)
-    if _time.localtime().tm_isdst and _time.daylight:
-        offset += 1  # DST advances the clock by 1 hour
-    return datetime.now() + timedelta(hours=offset)
 
 # Simple 60-second response cache so multiple open tabs don't hammer the API.
 _current_lock  = threading.Lock()
@@ -76,7 +68,7 @@ def _fetch_current():
     global _current_cache
     with _current_lock:
         if _current_cache:
-            age = (_local_now() - _current_cache[0]).total_seconds()
+            age = (datetime.now() - _current_cache[0]).total_seconds()
             if age < _CACHE_TTL:
                 return _current_cache[1]
 
@@ -108,7 +100,7 @@ def _fetch_current():
 
         result = {
             '_station_name': _station_name(),
-            'timestamp':     _local_now().isoformat(),
+            'timestamp':     datetime.now().isoformat(),
             'temp':          data.get('temp'),
             'humidity':      data.get('hum'),
             'dew_point':     data.get('dew_point'),
@@ -129,7 +121,7 @@ def _fetch_current():
             'temp_in':       data.get('temp_in'),
             'hum_in':        data.get('hum_in'),
         }
-        _current_cache = (_local_now(), result)
+        _current_cache = (datetime.now(), result)
         return result
 
 
@@ -137,7 +129,7 @@ def _fetch_history(days=7):
     """Return up to 600 records from the last `days` days of LOGS/*.json files."""
     if not LOGS_DIR.exists():
         return []
-    cutoff  = _local_now() - timedelta(days=days)
+    cutoff  = datetime.now() - timedelta(days=days)
     records = []
     def _file_date(p):
         try: return datetime.strptime(p.stem[len('weather_data_'):], '%b_%Y')

@@ -11,7 +11,7 @@ import requests
 import json
 import csv
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 import time
 
 with open(os.path.join(os.path.dirname(__file__), "config.json"), "r") as f:
@@ -21,10 +21,7 @@ API_KEY    = config["api"]["key"]
 API_SECRET = config["api"]["secret"]
 STATION_ID = config["api"]["stationId"]
 
-_tz_offset = config.get("timezone", {}).get("offset_hours", 0)
-if time.localtime().tm_isdst and time.daylight:
-    _tz_offset += 1  # DST advances the clock by 1 hour
-now = datetime.now() + timedelta(hours=_tz_offset)
+now = datetime.now()
 
 # Create LOGS directory if it doesn't exist
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))

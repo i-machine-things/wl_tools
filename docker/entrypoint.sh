@@ -27,16 +27,15 @@ cfg = {
         'smtp_server':     'smtp.gmail.com',
         'smtp_port':       587,
     },
-    'timezone': {
-        'offset_hours': int(os.environ.get('WL_TIMEZONE_OFFSET', 0)),
-    },
 }
 
-with open('/app/config.json', 'w') as f:
+fd = os.open('/app/config.json', os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+with os.fdopen(fd, 'w') as f:
     json.dump(cfg, f, indent=4)
 
 print('[entrypoint] config.json written from environment variables', flush=True)
 EOF
+  chown appuser:appuser /app/config.json
 fi
 
 # Start cron daemon (runs wl_logger.py on schedule)
@@ -44,4 +43,4 @@ cron
 
 # Run the dashboard server in the foreground (becomes PID 1 via exec,
 # so /proc/1/fd/1 used by cron jobs routes to docker logs)
-exec python3 /app/wl_dashboard.py
+exec gosu appuser python3 /app/wl_dashboard.py
