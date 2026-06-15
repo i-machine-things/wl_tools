@@ -273,7 +273,67 @@ body.edit-mode .edit-ov:active{cursor:grabbing}
 .edit-ov-grip{font-size:22px;opacity:.45;color:#4db8ff;margin-bottom:6px;line-height:1}
 [data-wid].drag-source{opacity:.3;border-style:dashed;border-color:#2a2a50}
 [data-wid].drag-over{outline:2px solid #4db8ff;outline-offset:-2px;border-color:#4db8ff}
+
+/* ── THEME TOGGLE ─────────────────────────────────────── */
+#theme-btn{
+  background:transparent;
+  border:1px solid #2a2a40;
+  color:#556;
+  font-family:'Courier New',Consolas,monospace;
+  font-size:14px;
+  width:36px;height:36px;
+  cursor:pointer;border-radius:2px;
+  transition:all .2s;flex-shrink:0;
+}
+#theme-btn:hover{border-color:#4db8ff;color:#4db8ff}
+
+/* ── LIGHT MODE ───────────────────────────────────────── */
+[data-theme="light"] html,
+[data-theme="light"] body{background:#f0f2f8;color:#111}
+[data-theme="light"] #hdr{background:#e0e4f0;border-bottom-color:#c8ccdc}
+[data-theme="light"] #hdr-title{color:#111}
+[data-theme="light"] #hdr-meta{color:#556}
+[data-theme="light"] #clock{color:#0055bb;text-shadow:none}
+[data-theme="light"] #edit-btn{border-color:#b0b4c8;color:#556}
+[data-theme="light"] #edit-btn:hover{border-color:#0055bb;color:#0055bb}
+[data-theme="light"] body.edit-mode #edit-btn{border-color:#007a60;color:#007a60;background:#007a6015}
+[data-theme="light"] #theme-btn{border-color:#b0b4c8;color:#556}
+[data-theme="light"] #theme-btn:hover{border-color:#0055bb;color:#0055bb}
+[data-theme="light"] .card{background:#f8f8ff;border-color:#d8dce8}
+[data-theme="light"] .ht{background:#d0f5ec;color:#007a60;border-bottom-color:#9addd0}
+[data-theme="light"] .hb{background:#d4ebff;color:#005599;border-bottom-color:#99ccff}
+[data-theme="light"] .ha{background:#fff2cc;color:#885500;border-bottom-color:#ffdd88}
+[data-theme="light"] .hr{background:#ffd4d4;color:#880000;border-bottom-color:#ffaaaa}
+[data-theme="light"] .hp{background:#f0d8ff;color:#660099;border-bottom-color:#cc88ff}
+[data-theme="light"] .hg{background:#d4f5d4;color:#006600;border-bottom-color:#88dd88}
+[data-theme="light"] .hw{background:#e8e8f8;color:#334466;border-bottom-color:#c8c8e8}
+[data-theme="light"] .cs{color:#556}
+[data-theme="light"] .big{color:#111}
+[data-theme="light"] .unit{color:#556}
+[data-theme="light"] .slabel{color:#556}
+[data-theme="light"] .mrow{border-top-color:#d0d4e8}
+[data-theme="light"] .mrow .mv{color:#222}
+[data-theme="light"] .mrow .ml{color:#778}
+[data-theme="light"] .gauge-wrap svg text{fill:#111}
+[data-theme="light"] .gauge-note{color:#778}
+[data-theme="light"] .hbar-track{background:#e0e4f0;border-color:#c8ccdc}
+[data-theme="light"] .hbar-labels{color:#778}
+[data-theme="light"] .aqi-big .alabel{color:#556}
+[data-theme="light"] .aqi-big .asub{color:#778}
+[data-theme="light"] .pm-table tr:not(:last-child) td{border-bottom-color:#d8dce8}
+[data-theme="light"] .pm-bar-bg{background:#e0e4f0}
+[data-theme="light"] .wind-dir-label{color:#0055bb}
+[data-theme="light"] .wind-speeds .mv{color:#222}
+[data-theme="light"] .wind-speeds .ml{color:#778}
+[data-theme="light"] .no-data{color:#778}
+[data-theme="light"] .err-box{color:#cc0000}
+[data-theme="light"] hr.div{border-top-color:#d0d4e8}
+[data-theme="light"] .label-row{color:#778}
+[data-theme="light"] .dot{filter:brightness(0.8)}
+[data-theme="light"] [data-wid].drag-source{border-color:#a0a8c8}
+[data-theme="light"] [data-wid].drag-over{outline-color:#0055bb;border-color:#0055bb}
 </style>
+<script>if(localStorage.getItem('wl-theme')==='light')document.documentElement.setAttribute('data-theme','light');</script>
 </head>
 <body>
 
@@ -287,6 +347,7 @@ body.edit-mode .edit-ov:active{cursor:grabbing}
   </div>
   <div style="display:flex;align-items:center;gap:16px;flex-shrink:0">
     <button id="edit-btn" onclick="toggleEditMode()">EDIT</button>
+    <button id="theme-btn" aria-label="Toggle theme">&#9728;</button>
     <div id="clock">--:--:-- --</div>
   </div>
 </div>
@@ -299,6 +360,22 @@ body.edit-mode .edit-ov:active{cursor:grabbing}
 </div>
 
 <script>
+/* ═══════════════════════════════════════════════════════════
+   THEME TOGGLE
+═══════════════════════════════════════════════════════════ */
+(function() {
+  const t = localStorage.getItem('wl-theme');
+  const btn = document.getElementById('theme-btn');
+  btn.textContent = t === 'light' ? '☾' : '☀';
+  btn.addEventListener('click', function() {
+    const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    if (next === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    else document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('wl-theme', next);
+    btn.textContent = next === 'light' ? '☾' : '☀';
+  });
+})();
+
 /* ═══════════════════════════════════════════════════════════
    UTILITIES
 ═══════════════════════════════════════════════════════════ */
