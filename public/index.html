@@ -288,8 +288,8 @@ body.edit-mode .edit-ov:active{cursor:grabbing}
 #theme-btn:hover{border-color:#4db8ff;color:#4db8ff}
 
 /* ── LIGHT MODE ───────────────────────────────────────── */
-[data-theme="light"] html,
-[data-theme="light"] body{background:#f0f2f8;color:#111}
+html[data-theme="light"],
+html[data-theme="light"] body{background:#f0f2f8;color:#111}
 [data-theme="light"] #hdr{background:#e0e4f0;border-bottom-color:#c8ccdc}
 [data-theme="light"] #hdr-title{color:#111}
 [data-theme="light"] #hdr-meta{color:#556}
@@ -333,7 +333,7 @@ body.edit-mode .edit-ov:active{cursor:grabbing}
 [data-theme="light"] [data-wid].drag-source{border-color:#a0a8c8}
 [data-theme="light"] [data-wid].drag-over{outline-color:#0055bb;border-color:#0055bb}
 </style>
-<script>if(localStorage.getItem('wl-theme')==='light')document.documentElement.setAttribute('data-theme','light');</script>
+<script>try{if(localStorage.getItem('wl-theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
 </head>
 <body>
 
@@ -364,15 +364,17 @@ body.edit-mode .edit-ov:active{cursor:grabbing}
    THEME TOGGLE
 ═══════════════════════════════════════════════════════════ */
 (function() {
-  const t = localStorage.getItem('wl-theme');
+  let t = 'dark';
+  try { t = localStorage.getItem('wl-theme') || 'dark'; } catch(e) {}
   const btn = document.getElementById('theme-btn');
   btn.textContent = t === 'light' ? '☾' : '☀';
   btn.addEventListener('click', function() {
     const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
     if (next === 'light') document.documentElement.setAttribute('data-theme', 'light');
     else document.documentElement.removeAttribute('data-theme');
-    localStorage.setItem('wl-theme', next);
+    try { localStorage.setItem('wl-theme', next); } catch(e) {}
     btn.textContent = next === 'light' ? '☾' : '☀';
+    refreshChartTheme(next === 'light');
   });
 })();
 
@@ -495,6 +497,29 @@ function baseOpts(extra={}) {
 }
 
 let charts = {};
+
+function refreshChartTheme(isLight) {
+  const newGrid = isLight ? '#dde0ec' : '#161624';
+  const newTick = isLight ? '#556' : '#6a6a88';
+  Chart.defaults.color = newTick;
+  Object.values(charts).forEach(c => {
+    ['x','y'].forEach(ax => {
+      const scale = c.options.scales && c.options.scales[ax];
+      if (!scale) return;
+      if (scale.grid) scale.grid.color = newGrid;
+      if (scale.ticks) scale.ticks.color = newTick;
+    });
+    const tt = c.options.plugins && c.options.plugins.tooltip;
+    if (tt) {
+      tt.backgroundColor = isLight ? '#ffffff' : '#1a1a2c';
+      tt.titleColor      = isLight ? '#556'    : '#778';
+      tt.bodyColor       = isLight ? '#333'    : '#c8c8d8';
+      tt.borderColor     = isLight ? '#c8ccdc' : '#2a2a40';
+    }
+    c.update();
+  });
+}
+
 function mkChart(id, type, data, opts) {
   if (charts[id]) charts[id].destroy();
   const ctx = document.getElementById(id);
