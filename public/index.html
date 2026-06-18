@@ -35,7 +35,7 @@ html,body{
   color:#e8e8f4;
   text-transform:uppercase;
 }
-#hdr-meta{font-size:10px;color:#778;letter-spacing:1px}
+#hdr-meta{font-size:10px;color:#a8a8c0;letter-spacing:1px}
 #clock{
   font-size:26px;
   font-weight:bold;
@@ -84,7 +84,7 @@ html,body{
 .cs{
   font-size:10px;
   font-style:italic;
-  color:#778;
+  color:#a8a8c0;
   padding:2px 11px 5px;
   letter-spacing:.5px;
 }
@@ -107,10 +107,10 @@ html,body{
   color:#e8e8f4;
   letter-spacing:-1px;
 }
-.unit{font-size:18px;color:#778;margin-left:3px}
+.unit{font-size:18px;color:#a8a8c0;margin-left:3px}
 .slabel{
   font-size:10px;
-  color:#778;
+  color:#a8a8c0;
   margin-top:5px;
   letter-spacing:1.5px;
   text-transform:uppercase;
@@ -126,7 +126,7 @@ html,body{
   margin-top:10px;
 }
 .mrow .mv{font-size:22px;font-weight:bold;color:#d0d0e4}
-.mrow .ml{font-size:9px;color:#778;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.mrow .ml{font-size:9px;color:#a8a8c0;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
 
 /* ── HUMIDITY BAR ─────────────────────────────────────── */
 .hbar-track{
@@ -146,7 +146,7 @@ html,body{
   display:flex;
   justify-content:space-between;
   font-size:9px;
-  color:#667;
+  color:#9090a8;
   margin-top:2px;
 }
 
@@ -167,17 +167,17 @@ html,body{
   text-transform:uppercase;
   margin-top:4px;
 }
-.gauge-note{font-size:9px;color:#667;margin-top:4px;letter-spacing:.5px}
+.gauge-note{font-size:9px;color:#9090a8;margin-top:4px;letter-spacing:.5px}
 
 /* ── AQI BADGE (big) ──────────────────────────────────── */
 .aqi-big{
   text-align:center;
   padding:14px 12px;
 }
-.aqi-big .alabel{font-size:10px;color:#778;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.aqi-big .alabel{font-size:10px;color:#a8a8c0;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
 .aqi-big .aval{font-size:56px;font-weight:bold;line-height:1;margin-bottom:6px}
 .aqi-big .adesc{font-size:14px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:2px;display:inline-block}
-.aqi-big .asub{font-size:10px;color:#778;margin-top:6px}
+.aqi-big .asub{font-size:10px;color:#a8a8c0;margin-top:6px}
 
 /* ── CHART WRAPPER ────────────────────────────────────── */
 .cw{position:relative;height:170px;padding:4px 8px 8px}
@@ -200,11 +200,11 @@ html,body{
 }
 .wind-speeds{display:flex;justify-content:space-around;margin-top:8px}
 .wind-speeds .mv{font-size:20px;font-weight:bold;color:#d0d0e4}
-.wind-speeds .ml{font-size:9px;color:#778;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.wind-speeds .ml{font-size:9px;color:#a8a8c0;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
 
 /* ── STATUS / EMPTY ──────────────────────────────────── */
 .no-data{
-  color:#667;text-align:center;padding:24px 12px;font-size:11px;
+  color:#9090a8;text-align:center;padding:24px 12px;font-size:11px;
   letter-spacing:1px;line-height:1.8;
 }
 .err-box{color:#ff6060;text-align:center;padding:24px;line-height:1.8}
@@ -219,7 +219,7 @@ html,body{
 
 /* ── MISC ─────────────────────────────────────────────── */
 hr.div{border:none;border-top:1px solid #181828;margin:8px 0}
-.label-row{display:flex;justify-content:space-between;font-size:10px;color:#667;margin-top:3px}
+.label-row{display:flex;justify-content:space-between;font-size:10px;color:#9090a8;margin-top:3px}
 
 /* ── EDIT MODE ────────────────────────────────────────── */
 .card{position:relative}
@@ -384,7 +384,7 @@ html[data-theme="light"] body{background:#f0f2f8;color:#111}
 const REFRESH_MS = 5 * 60 * 1000;
 
 function aqiColor(v) {
-  if (v == null) return '#778';
+  if (v == null) return '#a8a8c0';
   if (v <=  50) return '#00e400';
   if (v <= 100) return '#e0e000';
   if (v <= 150) return '#ff7e00';
@@ -461,9 +461,9 @@ function makeSVGGauge(val, max, color, size=180) {
       ${val!=null?Math.round(val):'—'}
     </text>
     <text x="${(sx-6).toFixed(1)}" y="${(sy+16).toFixed(1)}" text-anchor="middle"
-      font-family="Courier New,monospace" font-size="9" fill="#778">0</text>
+      font-family="Courier New,monospace" font-size="9" fill="#9090a8">0</text>
     <text x="${(bgx+6).toFixed(1)}" y="${(bgy+16).toFixed(1)}" text-anchor="middle"
-      font-family="Courier New,monospace" font-size="9" fill="#778">${max}</text>
+      font-family="Courier New,monospace" font-size="9" fill="#9090a8">${max}</text>
   </svg>`;
 }
 
@@ -472,7 +472,7 @@ function makeSVGGauge(val, max, color, size=180) {
 ═══════════════════════════════════════════════════════════ */
 const FONT = "'Courier New', monospace";
 const gridColor = '#161624';
-const tickColor = '#6a6a88';
+const tickColor = '#9090a8';
 Chart.defaults.color = tickColor;
 Chart.defaults.font.family = FONT;
 
@@ -664,7 +664,7 @@ function build(cur, hist) {
           ${pmRow('PM 10',   cur.pm_10,  '#ff6060', 50)}
         </table>
         <hr class="div" style="margin-top:8px">
-        <div style="font-size:9px;color:#667;letter-spacing:.5px">
+        <div style="font-size:9px;color:#9090a8;letter-spacing:.5px">
           WHO Annual Guideline: PM2.5 &lt; 5 &micro;g/m&sup3; &nbsp;&bull;&nbsp; PM10 &lt; 15 &micro;g/m&sup3;
         </div>
       </div>
@@ -738,7 +738,7 @@ function build(cur, hist) {
               ? '<span style="color:#ff7e00">&#9650; Warmer than actual</span>'
               : cur.heat_index < cur.temp
               ? '<span style="color:#4db8ff">&#9660; Cooler than actual</span>'
-              : '<span style="color:#778">= Same as actual</span>'
+              : '<span style="color:#a8a8c0">= Same as actual</span>'
             : '—'}
         </div>
       </div>
@@ -760,7 +760,7 @@ function build(cur, hist) {
               : cur.wet_bulb > 70
               ? '<span style="color:#e0e000">&#9675; MODERATE</span>'
               : '<span style="color:#00c8a0">&#10003; SAFE</span>'
-            : '<span style="color:#667">—</span>'}
+            : '<span style="color:#9090a8">—</span>'}
         </div>
       </div>
     </div>
@@ -771,7 +771,7 @@ function build(cur, hist) {
       <div class="cb wind-center">
         ${windAvail ? `
           <span class="wind-dir-label">${windDir}</span>
-          <div style="font-size:10px;color:#778;letter-spacing:1px">${cur.wind_dir != null ? cur.wind_dir+'°' : '—'}</div>
+          <div style="font-size:10px;color:#a8a8c0;letter-spacing:1px">${cur.wind_dir != null ? cur.wind_dir+'°' : '—'}</div>
           <div class="wind-speeds">
             <div>
               <div class="mv" style="color:#4db8ff">${fmt(cur.wind_speed,1)}</div>
@@ -790,7 +790,7 @@ function build(cur, hist) {
       <div class="ch ${cur.solar_rad != null ? 'ha' : 'hw'}">SOLAR &amp; UV</div>
       <div class="cs">Radiation &amp; UV Index</div>
       <div class="cb" style="text-align:center;padding:10px 12px">
-        <div class="big" style="color:${cur.uv_index != null ? uvBand.c : '#778'}">${fmt(cur.uv_index,1)}</div>
+        <div class="big" style="color:${cur.uv_index != null ? uvBand.c : '#a8a8c0'}">${fmt(cur.uv_index,1)}</div>
         <div class="slabel">UV Index</div>
         ${cur.uv_index != null
           ? `<div style="margin-top:6px"><span class="gauge-badge"
@@ -819,7 +819,7 @@ function build(cur, hist) {
         <div style="font-size:11px;color:#556">
           ${cur.pressure != null
             ? cur.pressure > 30.2 ? '<span style="color:#00c8a0">High — Clear / Stable</span>'
-              : cur.pressure > 29.8 ? '<span style="color:#778">Normal</span>'
+              : cur.pressure > 29.8 ? '<span style="color:#a8a8c0">Normal</span>'
               : '<span style="color:#ffaa00">Low — Unsettled weather</span>'
             : '—'}
         </div>
@@ -835,7 +835,7 @@ function build(cur, hist) {
         <hr class="div">
         <div style="font-size:11px;color:#556">
           ${cur.rainfall != null
-            ? cur.rainfall === 0 ? '<span style="color:#778">No rainfall today</span>'
+            ? cur.rainfall === 0 ? '<span style="color:#a8a8c0">No rainfall today</span>'
               : cur.rainfall < 0.25 ? '<span style="color:#4db8ff">Light rain</span>'
               : cur.rainfall < 1 ? '<span style="color:#4db8ff">Moderate rain</span>'
               : '<span style="color:#c080ff">Heavy rain</span>'
@@ -860,8 +860,8 @@ function build(cur, hist) {
             padding:4px 6px;margin-bottom:2px;border-radius:1px;
             background:${active ? color+'22' : 'transparent'};
             border-left:3px solid ${active ? color : '#1a1a2c'}">
-            <span style="color:${active ? color : '#667'};font-size:10px;letter-spacing:1px">${label}</span>
-            <span style="color:${active ? '#e8e8f4' : '#667'};font-size:10px">${range}</span>
+            <span style="color:${active ? color : '#9090a8'};font-size:10px;letter-spacing:1px">${label}</span>
+            <span style="color:${active ? '#e8e8f4' : '#9090a8'};font-size:10px">${range}</span>
           </div>`
         ).join('')}
       </div>
