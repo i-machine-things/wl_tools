@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command:*)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)",
+      "Bash(pip install:*)",
+      "Bash(curl:*)",
+      "Bash(python pyinstxtractor.py:*)",
+      "Bash(python3:*)",
+      "Bash(unzip:*)",
+      "Bash(find:*)",
+      "Bash(for f in *.pyc)",
+      "Bash(do echo \"=== $f ===\")",
+      "Bash(done)",
+      "Bash(pip show:*)",
+      "Bash(uncompyle6:*)",
+      "Bash(python -m uncompyle6:*)",
+      "Bash(python3.6:*)",
+      "Bash(python36:*)",
+      "Bash(ls:*)",
+      "Bash(python inspect_pyc.py:*)",
+      "Bash(xxd:*)",
+      "Bash(python decompile_simple.py:*)",
+      "Bash(python monitor_network.py:*)",
+      "Bash(cat:*)",
+      "Bash(python extract_strings.py:*)",
+      "Bash(tee:*)",
+      "Bash(python -m py_compile:*)",
+      "Bash(python:*)",
+      "Bash(python3.13 --version:*)",
+      "Bash(py:*)",
+      "Bash(py -3.13:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

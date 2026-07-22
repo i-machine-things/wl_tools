@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Weather Station Dashboard</title>
+<title>Weather Station Dashboard — SAMPLE</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -223,13 +223,8 @@ hr.div{border:none;border-top:1px solid #181828;margin:8px 0}
 
 /* ── EDIT MODE ────────────────────────────────────────── */
 .card{position:relative}
-
-/* Hidden cards disappear in normal mode */
 .card.card-hidden{display:none}
-/* In edit mode every card is visible */
 body.edit-mode .card.card-hidden{display:block}
-
-/* Clickable overlay */
 .edit-ov{
   position:absolute;inset:0;
   display:flex;flex-direction:column;
@@ -240,7 +235,6 @@ body.edit-mode .card.card-hidden{display:block}
 .card:not(.card-hidden) .edit-ov{background:rgba(0,0,0,.6)}
 .card.card-hidden     .edit-ov{background:rgba(0,0,0,.8)}
 .edit-ov:hover{filter:brightness(1.15)}
-
 .edit-ov-name{
   font-size:11px;letter-spacing:2px;
   text-transform:uppercase;color:#a0a0b8;
@@ -253,8 +247,6 @@ body.edit-mode .card.card-hidden{display:block}
 }
 .card:not(.card-hidden) .edit-ov-badge{color:#00c8a0;border-color:#00c8a0;background:#00c8a018}
 .card.card-hidden       .edit-ov-badge{color:#ff6060;border-color:#ff6060;background:#ff606018}
-
-/* Edit button */
 #edit-btn{
   background:transparent;
   border:1px solid #2a2a40;
@@ -266,8 +258,6 @@ body.edit-mode .card.card-hidden{display:block}
 }
 #edit-btn:hover{border-color:#4db8ff;color:#4db8ff}
 body.edit-mode #edit-btn{border-color:#00c8a0;color:#00c8a0;background:#00c8a015}
-
-/* ── DRAG & DROP ──────────────────────────────────────── */
 body.edit-mode .edit-ov{cursor:grab}
 body.edit-mode .edit-ov:active{cursor:grabbing}
 .edit-ov-grip{font-size:22px;opacity:.45;color:#4db8ff;margin-bottom:6px;line-height:1}
@@ -349,12 +339,24 @@ html[data-theme="light"] body{background:#f0f2f8;color:#111}
 [data-theme="light"] .fc-lo{color:#0055bb}
 [data-theme="light"] .fc-prcp{color:#0055bb}
 [data-theme="light"] .fc-cond{color:#778}
+
+/* ── SAMPLE BANNER ────────────────────────────────────── */
+#sample-banner{
+  position:fixed;bottom:0;left:0;right:0;z-index:200;
+  background:#1a0a00;
+  border-top:1px solid #ffaa0044;
+  padding:5px 18px;
+  font-size:10px;
+  letter-spacing:2px;
+  color:#ffaa00;
+  text-align:center;
+  text-transform:uppercase;
+}
 </style>
 <script>try{if(localStorage.getItem('wl-theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
 </head>
 <body>
 
-<!-- HEADER -->
 <div id="hdr">
   <div id="hdr-left">
     <div id="hdr-title">&#9729; <span id="station-name">WEATHER STATION</span> &mdash; ENVIRONMENTAL MONITOR</div>
@@ -369,14 +371,84 @@ html[data-theme="light"] body{background:#f0f2f8;color:#111}
   </div>
 </div>
 
-<!-- DASHBOARD GRID -->
 <div class="grid" id="dash">
   <div class="card span4">
-    <div class="no-data">&#9711; CONNECTING TO WEATHER STATION...</div>
+    <div class="no-data">&#9711; LOADING SAMPLE DATA&#8230;</div>
   </div>
 </div>
 
+<div id="sample-banner">&#9888; SAMPLE &mdash; Mock data only &mdash; not connected to a live station</div>
+
 <script>
+/* ═══════════════════════════════════════════════════════════
+   MOCK DATA
+═══════════════════════════════════════════════════════════ */
+const MOCK_CUR = {
+  _station_name: 'DEMO STATION',
+  temp:        74.3,
+  dew_point:   58.2,
+  heat_index:  77.1,
+  wet_bulb:    63.4,
+  humidity:    58,
+  aqi_val:     42,
+  aqi_desc:    'Good',
+  pm_1:        4.8,
+  pm_2p5:      8.3,
+  pm_10:       13.1,
+  wind_speed:  7.3,
+  wind_gust:   12.8,
+  wind_dir:    225,
+  solar_rad:   412,
+  uv_index:    5.2,
+  pressure:    30.12,
+  rainfall:    0.12,
+};
+
+/* generate 7 days of 15-min readings (672 points) */
+const MOCK_HIST = (function() {
+  const out = [];
+  const now = Date.now();
+  const POINTS = 672; // 7 days × 96
+  for (let i = POINTS; i >= 0; i--) {
+    const t   = now - i * 15 * 60 * 1000;
+    const hr  = new Date(t).getHours() + new Date(t).getMinutes() / 60;
+    const day = (POINTS - i) / 96;
+    /* diurnal temperature curve peaking at ~15:00 */
+    const tempBase = 72 + 3 * Math.sin((day / 7) * Math.PI);
+    const tempDiurnal = 6 * Math.sin(((hr - 6) / 24) * 2 * Math.PI);
+    const temp = tempBase + tempDiurnal + (Math.random() - 0.5) * 1.5;
+    const humidity = 62 - tempDiurnal * 1.2 + (Math.random() - 0.5) * 4;
+    const aqi = 35 + 15 * Math.sin((day / 3.5) * Math.PI) + (Math.random() - 0.5) * 8;
+    const pm25 = aqi * 0.18 + (Math.random() - 0.5) * 1.5;
+    out.push({
+      timestamp: new Date(t).toISOString(),
+      temp:     +temp.toFixed(1),
+      humidity: +Math.max(30, Math.min(95, humidity)).toFixed(0),
+      aqi_val:  +Math.max(10, aqi).toFixed(0),
+      pm_2p5:   +Math.max(0, pm25).toFixed(1),
+    });
+  }
+  return out;
+}());
+
+/* 5-day forecast (Open-Meteo shape) */
+const MOCK_FORECAST = {
+  daily: {
+    time: (function() {
+      const d = [];
+      for (let i = 0; i < 5; i++) {
+        const dt = new Date(Date.now() + i * 86400000);
+        d.push(dt.toISOString().slice(0, 10));
+      }
+      return d;
+    }()),
+    weathercode:                   [1, 3, 61, 2, 0],
+    temperature_2m_max:            [78, 72, 68, 74, 81],
+    temperature_2m_min:            [61, 58, 55, 59, 63],
+    precipitation_probability_max: [10, 35, 80, 25, 5],
+  }
+};
+
 /* ═══════════════════════════════════════════════════════════
    THEME TOGGLE
 ═══════════════════════════════════════════════════════════ */
@@ -398,8 +470,6 @@ html[data-theme="light"] body{background:#f0f2f8;color:#111}
 /* ═══════════════════════════════════════════════════════════
    UTILITIES
 ═══════════════════════════════════════════════════════════ */
-const REFRESH_MS = 5 * 60 * 1000;
-
 function aqiColor(v) {
   if (v == null) return '#a8a8c0';
   if (v <=  50) return '#00e400';
@@ -425,7 +495,6 @@ function aqiHeaderClass(v) {
   if (v <= 200) return 'hr';
   return 'hp';
 }
-
 function fmt(v, dec=1) {
   return v != null ? (dec === 0 ? Math.round(v) : Number(v).toFixed(dec)) : '—';
 }
@@ -466,7 +535,6 @@ function makeSVGGauge(val, max, color, size=180) {
   const [bgx,bgy] = pt(S+SWEEP);
   const [fx,fy] = pt(S+fill);
   const bgLarge=1, fillLarge = fill>180?1:0;
-
   const vH = size * 0.78;
   return `<svg width="${size}" height="${vH}" viewBox="0 0 ${size} ${size}" style="overflow:visible">
     <path d="M${sx.toFixed(2)} ${sy.toFixed(2)} A${r} ${r} 0 ${bgLarge} 1 ${bgx.toFixed(2)} ${bgy.toFixed(2)}"
@@ -553,15 +621,13 @@ function build(cur, hist) {
   const desc   = cur.aqi_desc || aqiDesc(aqi);
   const ahdr   = aqiHeaderClass(aqi);
 
-  /* ── history slices ── */
-  const hist24 = hist.slice(-96);   // up to 24 h at 15-min polling
+  const hist24 = hist.slice(-96);
   const lbl24  = hist24.map(d => {
     const t = new Date(d.timestamp);
     return t.getHours().toString().padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
   });
   const aqiToday = hist24.map(d => d.aqi_val);
   const tmpToday = hist24.map(d => d.temp);
-
   const lbl7   = hist.map(d => {
     const t = new Date(d.timestamp);
     return (t.getMonth()+1)+'/'+t.getDate();
@@ -570,10 +636,8 @@ function build(cur, hist) {
   const pm25_7 = hist.map(d => d.pm_2p5 != null ? d.pm_2p5 : null);
   const tmp7   = hist.map(d => d.temp);
   const hum7   = hist.map(d => d.humidity);
-
   const hasHist = hist.length > 0;
 
-  /* ── PM bar helpers ── */
   function pmRow(label, val, color, maxVal=50) {
     const w = val != null ? Math.min(val/maxVal*100, 100).toFixed(1) : 0;
     return `
@@ -588,16 +652,13 @@ function build(cur, hist) {
       </tr>`;
   }
 
-  /* ── no-data placeholder chart ── */
   function noDataHtml(msg='No history yet — data appears after logging begins.') {
     return `<div class="no-data">${msg}</div>`;
   }
 
-  /* ── wind card body ── */
   const windDir   = fmtDir(cur.wind_dir);
   const windAvail = cur.wind_speed != null || cur.wind_gust != null;
 
-  /* ── solar / UV ── */
   const uvBand = cur.uv_index != null
     ? cur.uv_index <= 2 ? {t:'LOW',c:'#00c8a0'} :
       cur.uv_index <= 5 ? {t:'MODERATE',c:'#e0e000'} :
@@ -606,10 +667,9 @@ function build(cur, hist) {
       {t:'EXTREME',c:'#9f3fa7'}
     : null;
 
-  /* ═══ RENDER HTML ═══════════════════════════════════════ */
   document.getElementById('dash').innerHTML = `
 
-    <!-- ── Row 1: Temp, Humidity, AQI gauge, PM ── -->
+    <!-- Row 1: Temp, Humidity, AQI gauge, PM -->
     <div class="dash-row">
 
     <div class="card" data-wid="w-temp">
@@ -689,7 +749,7 @@ function build(cur, hist) {
 
     </div><!-- end row 1 -->
 
-    <!-- ── Row 2: AQI today, 7-day AQI ── -->
+    <!-- Row 2: AQI today, 7-day AQI -->
     <div class="dash-row">
 
     <div class="card span2" data-wid="w-aqi-today">
@@ -714,7 +774,7 @@ function build(cur, hist) {
 
     </div><!-- end row 2 -->
 
-    <!-- ── Row 3: Temp today, 7-day temp/hum ── -->
+    <!-- Row 3: Temp today, 7-day temp/hum -->
     <div class="dash-row">
 
     <div class="card span2" data-wid="w-tmp-today">
@@ -739,7 +799,7 @@ function build(cur, hist) {
 
     </div><!-- end row 3 -->
 
-    <!-- ── Row 4: Heat index, Wet bulb, Wind, Solar/UV ── -->
+    <!-- Row 4: Heat index, Wet bulb, Wind, Solar/UV -->
     <div class="dash-row">
 
     <div class="card" data-wid="w-heat">
@@ -823,7 +883,7 @@ function build(cur, hist) {
 
     </div><!-- end row 4 -->
 
-    <!-- ── Row 5: Pressure, Rainfall, AQI detail, Data status ── -->
+    <!-- Row 5: Pressure, Rainfall, AQI detail, Data status -->
     <div class="dash-row">
 
     <div class="card" data-wid="w-pressure">
@@ -903,7 +963,7 @@ function build(cur, hist) {
 
     </div><!-- end row 5 -->
 
-    <!-- ── Row 6: 5-Day Forecast ── -->
+    <!-- Row 6: 5-Day Forecast -->
     <div class="dash-row">
     <div class="card" data-wid="w-forecast">
       <div class="ch hb">5-DAY FORECAST</div>
@@ -915,14 +975,10 @@ function build(cur, hist) {
   `;
 
   applyWidgetStates();
-  fetchForecast();
+  renderForecast(MOCK_FORECAST);
 
-  /* ═══════════════════════════════════════════════════════
-     RENDER CHARTS
-  ═══════════════════════════════════════════════════════ */
   if (!hasHist) return;
 
-  /* AQI today */
   mkChart('ch-aqi-today','line',{
     labels: lbl24,
     datasets:[{
@@ -933,7 +989,6 @@ function build(cur, hist) {
     }]
   }, baseOpts({yExtra:{title:{display:true,text:'AQI',color:tickColor,font:{family:FONT,size:9}}}}));
 
-  /* AQI 7-day */
   mkChart('ch-aqi-7d','line',{
     labels: lbl7,
     datasets:[
@@ -952,7 +1007,6 @@ function build(cur, hist) {
     plugins:{legend:{display:true,labels:{color:tickColor,font:{family:FONT,size:9},boxWidth:16}}}
   }));
 
-  /* Temp today */
   mkChart('ch-tmp-today','line',{
     labels: lbl24,
     datasets:[{
@@ -963,7 +1017,6 @@ function build(cur, hist) {
     }]
   }, baseOpts({yExtra:{title:{display:true,text:'°F',color:tickColor,font:{family:FONT,size:9}}}}));
 
-  /* Temp + Humidity 7-day */
   mkChart('ch-tmphum-7d','line',{
     labels: lbl7,
     datasets:[
@@ -1003,7 +1056,7 @@ function build(cur, hist) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   5-DAY FORECAST (Open-Meteo — no API key required)
+   5-DAY FORECAST (mock — same renderer as live dashboard)
 ═══════════════════════════════════════════════════════════ */
 const WMO_ICON = {
   0:'☀',1:'🌤',2:'⛅',3:'☁',
@@ -1025,44 +1078,6 @@ const WMO_DESC = {
   85:'SNOW SHWRS',86:'HVY SNOW',
   95:'T-STORM',96:'T-STORM',99:'T-STORM',
 };
-
-let _fcCache = null;
-
-async function _getCoords() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation)
-      return reject(new Error('Geolocation not supported'));
-    navigator.geolocation.getCurrentPosition(
-      p => resolve({lat: p.coords.latitude, lon: p.coords.longitude}),
-      e => reject(new Error('Location unavailable')),
-      {timeout: 10000}
-    );
-  });
-}
-
-async function fetchForecast() {
-  const el = document.querySelector('[data-wid="w-forecast"] .cb');
-  if (!el) return;
-
-  if (_fcCache && Date.now() - _fcCache.ts < 30 * 60 * 1000) {
-    renderForecast(_fcCache.data);
-    return;
-  }
-
-  try {
-    const {lat, lon} = await _getCoords();
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}`
-      + `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max`
-      + `&temperature_unit=fahrenheit&timezone=auto&forecast_days=5`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Forecast fetch failed');
-    const data = await res.json();
-    _fcCache = {data, ts: Date.now()};
-    renderForecast(data);
-  } catch(err) {
-    if (el) el.innerHTML = `<div class="no-data">${err.message}</div>`;
-  }
-}
 
 function renderForecast(data) {
   const el = document.querySelector('[data-wid="w-forecast"] .cb');
@@ -1087,49 +1102,6 @@ function renderForecast(data) {
   }).join('');
   el.innerHTML = `<div class="fc-grid">${items}</div>`;
 }
-
-/* ═══════════════════════════════════════════════════════════
-   FETCH & REFRESH
-═══════════════════════════════════════════════════════════ */
-async function refresh() {
-  try {
-    const [curRes, histRes] = await Promise.all([
-      fetch('/api/current'),
-      fetch('/api/history'),
-    ]);
-    if (!curRes.ok) throw new Error(`API ${curRes.status}`);
-
-    const cur  = await curRes.json();
-    const hist = histRes.ok ? await histRes.json() : [];
-
-    if (cur.error) throw new Error(cur.error);
-
-    document.getElementById('station-name').textContent =
-      cur._station_name || 'WEATHER STATION';
-
-    const now = new Date();
-    document.getElementById('rpt-date').textContent =
-      now.toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'2-digit'}).replace(',',' ').toUpperCase();
-    document.getElementById('rpt-updated').textContent =
-      now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
-
-    build(cur, hist);
-
-  } catch(err) {
-    document.getElementById('dash').innerHTML = `
-      <div class="card span4">
-        <div class="ch hr">CONNECTION ERROR</div>
-        <div class="cb err-box">
-          ${err.message}<br><br>
-          Check API credentials in config.json and ensure the station ID is set.
-        </div>
-      </div>`;
-    console.error(err);
-  }
-}
-
-refresh();
-setInterval(refresh, REFRESH_MS);
 
 /* ═══════════════════════════════════════════════════════════
    WIDGET EDIT MODE
@@ -1176,7 +1148,6 @@ function applyWidgetStates() {
     if (!card) continue;
     card.classList.toggle('card-hidden', !enabled);
   }
-  // Hide rows where every widget is disabled (skip in edit mode so they stay reachable)
   document.querySelectorAll('.dash-row').forEach(row => {
     const cards = row.querySelectorAll('[data-wid]');
     const allHidden = Array.from(cards).every(c => c.classList.contains('card-hidden'));
@@ -1197,9 +1168,7 @@ function _renderOverlays() {
       <div class="edit-ov-grip">&#8801;</div>
       <div class="edit-ov-name">${WIDGET_NAMES[wid] || wid}</div>
       <div class="edit-ov-badge">${enabled ? '● ENABLED' : '○ DISABLED'}</div>`;
-
     ov.addEventListener('click', () => toggleWidget(wid));
-
     ov.addEventListener('dragstart', e => {
       _dragSrc = wid;
       card.classList.add('drag-source');
@@ -1233,7 +1202,6 @@ function _renderOverlays() {
         saveOrder();
       }
     });
-
     card.appendChild(ov);
   });
 }
@@ -1294,6 +1262,16 @@ function toggleEditMode() {
     document.querySelectorAll('.edit-ov').forEach(el => el.remove());
   }
 }
+
+/* ── INIT ── */
+const now = new Date();
+document.getElementById('station-name').textContent = 'DEMO STATION';
+document.getElementById('rpt-date').textContent =
+  now.toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'2-digit'}).replace(',',' ').toUpperCase();
+document.getElementById('rpt-updated').textContent =
+  now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
+
+build(MOCK_CUR, MOCK_HIST);
 </script>
 </body>
 </html>
