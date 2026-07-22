@@ -1,77 +1,30 @@
-# Coding Best Practices & Reminders
+# Coding Notes — wl_tools
 
-## Resource Cleanup & Temporary Files
+## Dashboard architecture
 
-**IMPORTANT**: Always add proper cleanup code in programs to prevent lingering temp files after closing.
+`public/index.html` is a single-file SPA. All CSS, JS, and HTML are inline — no build step, no bundler. This is intentional: the file is served directly by Python's `SimpleHTTPRequestHandler` with zero dependencies beyond Chart.js (CDN).
 
-### Best Practices:
+Keep it that way. Do not introduce a framework, module bundler, or separate CSS file without a strong reason.
 
-1. **GUI Applications (PyQt, Tkinter, etc.)**
-   - Implement `closeEvent()` handler to cleanup resources on window close
-   - Call `deleteLater()` on widgets to ensure proper Qt object cleanup
-   - Process pending events with `app.processEvents()` before exit
+## Config pattern
 
-2. **File Handling**
-   - Use context managers (`with` statements) for file operations
-   - Explicitly close file handles when not using context managers
-   - Release file locks before program exit
-   - Clean up temporary files in temp directories
+`config.json` is never committed. `example.config.json` is the committed template. If a new config key is added, update `example.config.json` at the same time.
 
-3. **Background Threads & Workers**
-   - Stop and join all background threads before exit
-   - Cancel any pending operations
-   - Clean up thread-specific resources
+## API caching
 
-4. **Testing Cleanup**
-   - After closing the program, verify the executable can be:
-     - Deleted immediately
-     - Moved to another location
-     - Replaced with a new version
-   - If the file is locked, cleanup code is missing or incomplete
+`wl_dashboard.py` caches the WeatherLink API response for 60 seconds to avoid rate-limiting. The cache is in-memory (lost on restart). Do not reduce the cache TTL below 60 s.
 
-### Example Implementation (PyQt6):
+## Data files
 
-```python
-def closeEvent(self, event):
-    """Handle window close event - ensure proper cleanup"""
-    # Cleanup modules/components
-    for module in self.modules:
-        try:
-            module.cleanup()
-        except Exception as e:
-            print(f"Error cleaning up module: {e}")
+`LOGS/` files are named `weather_data_MMM_YYYY.{csv,json}`. The dashboard reads the last 7 days from JSON. The CSV is for Excel/offline use only — the dashboard never reads it.
 
-    # Save state
-    self.save_settings()
+## Widget system
 
-    # Accept close event
-    event.accept()
-    QApplication.quit()
+Each dashboard card has a `data-wid` attribute (e.g. `w-temp`, `w-forecast`). Widget visibility and order are persisted in `localStorage`. When adding a new card:
+1. Give it a unique `data-wid`
+2. Add an entry to `WIDGET_NAMES` in `index.html`
+3. Ensure it appears in a `<div class="dash-row">` so the edit/drag system picks it up
 
-def main():
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
+## 5-day forecast
 
-    exit_code = app.exec()
-
-    # Final cleanup
-    window.deleteLater()
-    app.processEvents()
-
-    sys.exit(exit_code)
-```
-
-### PyInstaller Specific:
-
-In `.spec` file, add:
-```python
-exe = EXE(
-    ...
-    bootloader_ignore_signals=True,  # Better cleanup handling
-    ...
-)
-```
-
-## Date: 2025-12-16
-This note was created based on issues encountered with PyInstaller executables remaining locked after closing.
+Uses the Open-Meteo API (free, no key). Requires browser geolocation permission. Responses are cached in `_fcCache` for 30 minutes to avoid re-fetching on every 5-minute dashboard refresh.

@@ -6,13 +6,22 @@ You are a senior software developer. These rules override your default behavior.
 
 ## Project Overview
 
-**{{PROJECT_NAME}}** — {{PROJECT_DESCRIPTION}}
+**wl_tools** — A Python-based weather data logging and visualization suite. Polls the Davis WeatherLink API v2, logs readings to CSV/JSON, and serves a real-time environmental dashboard over HTTP on port 8081.
 
 Key files:
-<!-- TODO: list the most important files in this project -->
+- `wl_dashboard.py` — HTTP server; serves `/public/` and exposes `/api/current` + `/api/history`
+- `wl_logger.py` — Polls WeatherLink API on a cron schedule and writes to `LOGS/`
+- `wl_report.py` — Sends daily email summary via SMTP/Gmail
+- `public/index.html` — Single-page dashboard UI (vanilla JS + Chart.js, dark/light themes, editable widget layout)
+- `config.json` — API credentials + station ID + SMTP config (not tracked in git — see `example.config.json`)
+- `LOGS/` — Monthly CSV + JSON data files (not tracked in git)
 
 Environment / deployment:
-<!-- TODO: describe runtime, dependencies, and how this is deployed -->
+- Python 3.7+ with `requests` library (`pip install requests`)
+- Copy `example.config.json` → `config.json` and fill in credentials before first run
+- Start dashboard: `python wl_dashboard.py` (serves on http://localhost:8081)
+- Logger + report run on OS cron/Task Scheduler — see `readme.md` for schedule setup
+- No CI pipeline currently; validate manually by running the dashboard and checking `/api/current`
 
 ## Rule 0: Always Read First
 
@@ -87,9 +96,10 @@ Before pushing any commit that touches core logic:
 
 Do not push if there are unhandled exceptions or broken/empty outputs.
 
-CI runs automatically on every PR (`.github/workflows/ci.yml`): lint, security scan, tests, and build. A passing PR means all four gates are green — do not merge until they are.
-
-<!-- TODO: replace the above with project-specific test instructions -->
+This project has no automated test suite. Validate manually:
+1. Start `python wl_dashboard.py` and open http://localhost:8081
+2. Confirm `/api/current` returns valid JSON with sensor readings
+3. Confirm charts render and the 5-day forecast card populates after allowing location access
 
 ## Rule 4: Semantic Versioning
 
