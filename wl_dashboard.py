@@ -29,6 +29,8 @@ with open(BASE_DIR / 'config.json') as f:
 _API_KEY    = _cfg['api']['key']
 _API_SECRET = _cfg['api']['secret']
 _STATION_ID = _cfg['api']['stationId']
+_LAT        = _cfg.get('location', {}).get('lat') or None
+_LON        = _cfg.get('location', {}).get('lon') or None
 
 _station_name_lock  = threading.Lock()
 _station_name_cache = None
@@ -108,6 +110,8 @@ def _fetch_current():
 
         result = {
             '_station_name': _station_name(),
+            '_lat':          _LAT,
+            '_lon':          _LON,
             'timestamp':     _local_now().isoformat(),
             'temp':          data.get('temp'),
             'humidity':      data.get('hum'),

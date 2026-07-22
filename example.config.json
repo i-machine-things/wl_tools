@@ -15,5 +15,10 @@
     
     "timezone":{
         "offset_hours": -8
+    },
+
+    "location":{
+        "lat": 0.0,
+        "lon": 0.0
     }
 }
