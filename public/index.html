@@ -349,6 +349,31 @@ html[data-theme="light"] body{background:#f0f2f8;color:#111}
 [data-theme="light"] .fc-lo{color:#0055bb}
 [data-theme="light"] .fc-prcp{color:#0055bb}
 [data-theme="light"] .fc-cond{color:#778}
+
+/* ── FORECAST LOCATION EDITOR (edit mode only) ────────── */
+.fc-edit-loc{
+  width:100%;padding:8px 16px 4px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.fc-edit-loc input{
+  width:100%;background:#0a0a14;border:1px solid #2a2a40;
+  color:#c8c8d8;font-family:'Courier New',Consolas,monospace;
+  font-size:11px;letter-spacing:1px;padding:6px 10px;
+  border-radius:2px;outline:none;text-align:center;
+}
+.fc-edit-loc input:focus{border-color:#4db8ff}
+.fc-edit-loc input::placeholder{color:#444460}
+.fc-edit-loc-row{display:flex;gap:6px;width:100%}
+.fc-edit-loc-row button{
+  flex:1;background:transparent;border:1px solid #2a2a40;color:#4db8ff;
+  font-family:'Courier New',Consolas,monospace;font-size:10px;
+  letter-spacing:2px;padding:5px 6px;border-radius:2px;cursor:pointer;
+  text-transform:uppercase;transition:border-color .15s,background .15s;
+}
+.fc-edit-loc-row button:hover{border-color:#4db8ff;background:#4db8ff14}
+.fc-edit-loc-row button.fc-clr-btn{color:#ff6060}
+.fc-edit-loc-row button.fc-clr-btn:hover{border-color:#ff6060;background:#ff606014}
+.fc-loc-status{font-size:9px;color:#6a6a88;letter-spacing:.5px;text-align:center}
 </style>
 <script>try{if(localStorage.getItem('wl-theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
 </head>
@@ -548,6 +573,8 @@ function mkChart(id, type, data, opts) {
    BUILD DASHBOARD
 ═══════════════════════════════════════════════════════════ */
 function build(cur, hist) {
+  _cfgLat = cur._lat != null ? cur._lat : null;
+  _cfgLon = cur._lon != null ? cur._lon : null;
   const aqi    = cur.aqi_val;
   const ac     = aqiColor(aqi);
   const desc   = cur.aqi_desc || aqiDesc(aqi);
@@ -915,7 +942,7 @@ function build(cur, hist) {
   `;
 
   applyWidgetStates();
-  fetchForecast();
+  fetchForecast(cur._lat, cur._lon);
 
   /* ═══════════════════════════════════════════════════════
      RENDER CHARTS
@@ -1027,6 +1054,59 @@ const WMO_DESC = {
 };
 
 let _fcCache = null;
+let _cfgLat  = null;
+let _cfgLon  = null;
+
+function _loadSavedLocation() {
+  try { const s = localStorage.getItem('wl-forecast-location'); return s ? JSON.parse(s) : null; }
+  catch(e) { return null; }
+}
+function _saveForecastLocation(lat, lon, label) {
+  localStorage.setItem('wl-forecast-location', JSON.stringify({lat, lon, label}));
+}
+function _clearForecastLocation() {
+  localStorage.removeItem('wl-forecast-location');
+}
+
+async function _geocode(query) {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`;
+  const res = await fetch(url, {headers:{'Accept-Language':'en'}});
+  if (!res.ok) throw new Error('Geocoding service error');
+  const results = await res.json();
+  if (!results.length) throw new Error(`"${query}" not found`);
+  const r = results[0];
+  const label = r.display_name.split(',').slice(0, 2).join(',').trim();
+  return {lat: parseFloat(r.lat), lon: parseFloat(r.lon), label};
+}
+
+async function setForecastLocation() {
+  const input  = document.getElementById('fc-loc-input');
+  const status = document.getElementById('fc-loc-status');
+  if (!input) return;
+  const query = input.value.trim();
+  if (!query) return;
+  if (status) status.textContent = 'Searching…';
+  try {
+    const loc = await _geocode(query);
+    _saveForecastLocation(loc.lat, loc.lon, loc.label);
+    _fcCache = null;
+    if (status) status.textContent = `✓ ${loc.label}`;
+    input.value = '';
+    fetchForecast(loc.lat, loc.lon);
+  } catch(err) {
+    if (status) status.textContent = err.message;
+  }
+}
+
+function clearForecastLocation() {
+  _clearForecastLocation();
+  _fcCache = null;
+  const status = document.getElementById('fc-loc-status');
+  const src = _cfgLat != null && _cfgLon != null && (_cfgLat !== 0 || _cfgLon !== 0)
+    ? 'Using config.json location' : 'Using browser location';
+  if (status) status.textContent = src;
+  fetchForecast(_cfgLat, _cfgLon);
+}
 
 async function _getCoords() {
   return new Promise((resolve, reject) => {
@@ -1040,7 +1120,7 @@ async function _getCoords() {
   });
 }
 
-async function fetchForecast() {
+async function fetchForecast(cfgLat, cfgLon) {
   const el = document.querySelector('[data-wid="w-forecast"] .cb');
   if (!el) return;
 
@@ -1050,7 +1130,19 @@ async function fetchForecast() {
   }
 
   try {
-    const {lat, lon} = await _getCoords();
+    let lat, lon;
+    const saved = _loadSavedLocation();
+    if (saved) {
+      lat = saved.lat;
+      lon = saved.lon;
+    } else if (cfgLat != null && cfgLon != null && (cfgLat !== 0 || cfgLon !== 0)) {
+      lat = cfgLat;
+      lon = cfgLon;
+    } else {
+      const coords = await _getCoords();
+      lat = coords.lat;
+      lon = coords.lon;
+    }
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}`
       + `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max`
       + `&temperature_unit=fahrenheit&timezone=auto&forecast_days=5`;
@@ -1197,6 +1289,28 @@ function _renderOverlays() {
       <div class="edit-ov-grip">&#8801;</div>
       <div class="edit-ov-name">${WIDGET_NAMES[wid] || wid}</div>
       <div class="edit-ov-badge">${enabled ? '● ENABLED' : '○ DISABLED'}</div>`;
+
+    if (wid === 'w-forecast') {
+      const saved = _loadSavedLocation();
+      const locStatus = saved
+        ? `&#10003; ${saved.label}`
+        : (_cfgLat != null && _cfgLon != null && (_cfgLat !== 0 || _cfgLon !== 0))
+          ? 'Using config.json location'
+          : 'Using browser location';
+      const locDiv = document.createElement('div');
+      locDiv.className = 'fc-edit-loc';
+      locDiv.innerHTML = `
+        <input id="fc-loc-input" type="text" placeholder="City name or ZIP code"
+          onkeydown="if(event.key==='Enter')setForecastLocation()">
+        <div class="fc-edit-loc-row">
+          <button onclick="setForecastLocation()">SET LOCATION</button>
+          <button class="fc-clr-btn" onclick="clearForecastLocation()">CLEAR</button>
+        </div>
+        <div id="fc-loc-status" class="fc-loc-status">${locStatus}</div>`;
+      locDiv.addEventListener('click',     e => e.stopPropagation());
+      locDiv.addEventListener('dragstart', e => e.stopPropagation());
+      ov.appendChild(locDiv);
+    }
 
     ov.addEventListener('click', () => toggleWidget(wid));
 
