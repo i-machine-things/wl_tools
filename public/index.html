@@ -274,6 +274,15 @@ body.edit-mode #edit-btn{border-color:#00c8a0;color:#00c8a0;background:#00c8a015
 body.edit-mode .edit-ov{cursor:grab}
 body.edit-mode .edit-ov:active{cursor:grabbing}
 .edit-ov-grip{font-size:22px;opacity:.45;color:#4db8ff;margin-bottom:6px;line-height:1}
+.edit-ov-span{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  cursor:pointer;padding:3px 10px;margin-top:2px;
+  border:1px solid #2a2a40;border-radius:2px;
+  transition:border-color .15s,background .15s;
+}
+.edit-ov-span:hover{border-color:#4db8ff;background:#4db8ff10}
+.edit-ov-span-blocks{font-size:14px;letter-spacing:3px;color:#4db8ff;line-height:1.2}
+.edit-ov-span-label{font-size:8px;color:#6a6a88;letter-spacing:1.5px;text-transform:uppercase}
 [data-wid].drag-source{opacity:.3;border-style:dashed;border-color:#2a2a50}
 [data-wid].drag-over{outline:2px solid #4db8ff;outline-offset:-2px;border-color:#4db8ff}
 
@@ -335,6 +344,10 @@ html[data-theme="light"] body{background:#f0f2f8;color:#111}
 [data-theme="light"] .dot{filter:brightness(0.8)}
 [data-theme="light"] [data-wid].drag-source{border-color:#a0a8c8}
 [data-theme="light"] [data-wid].drag-over{outline-color:#0055bb;border-color:#0055bb}
+[data-theme="light"] .edit-ov-span{border-color:#c8ccdc}
+[data-theme="light"] .edit-ov-span:hover{border-color:#0055bb;background:#0055bb10}
+[data-theme="light"] .edit-ov-span-blocks{color:#0055bb}
+[data-theme="light"] .edit-ov-span-label{color:#778}
 
 /* ── 5-DAY FORECAST ──────────────────────────────────── */
 .fc-grid{display:flex;justify-content:space-around;padding:8px 12px 14px;gap:8px}
@@ -1269,8 +1282,34 @@ function saveStates(s) {
 }
 let wStates = loadStates();
 
+function loadSpans() {
+  try { const s = localStorage.getItem('wl-widget-spans'); return s ? JSON.parse(s) : {}; }
+  catch(e) { return {}; }
+}
+function saveSpans(s) { localStorage.setItem('wl-widget-spans', JSON.stringify(s)); }
+let wSpans = loadSpans();
+
+function applyWidgetSpans() {
+  for (const wid of Object.keys(WIDGET_NAMES)) {
+    const card = document.querySelector(`[data-wid="${wid}"]`);
+    if (!card) continue;
+    card.classList.remove('span2','span3','span4');
+    const span = wSpans[wid] || 1;
+    if (span > 1) card.classList.add(`span${span}`);
+  }
+}
+
+function cycleWidgetSpan(wid) {
+  const cur = wSpans[wid] || 1;
+  wSpans[wid] = cur >= 4 ? 1 : cur + 1;
+  saveSpans(wSpans);
+  applyWidgetSpans();
+  _renderOverlays();
+}
+
 function applyWidgetStates() {
   applyWidgetOrder();
+  applyWidgetSpans();
   for (const [wid, enabled] of Object.entries(wStates)) {
     const card = document.querySelector(`[data-wid="${wid}"]`);
     if (!card) continue;
@@ -1297,6 +1336,15 @@ function _renderOverlays() {
       <div class="edit-ov-grip">&#8801;</div>
       <div class="edit-ov-name">${WIDGET_NAMES[wid] || wid}</div>
       <div class="edit-ov-badge">${enabled ? '● ENABLED' : '○ DISABLED'}</div>`;
+
+    const _span = wSpans[wid] || 1;
+    const spanDiv = document.createElement('div');
+    spanDiv.className = 'edit-ov-span';
+    spanDiv.innerHTML = `<span class="edit-ov-span-blocks">${'■'.repeat(_span)}${'□'.repeat(4-_span)}</span>`
+      + `<span class="edit-ov-span-label">${_span} COL</span>`;
+    spanDiv.addEventListener('click', e => { e.stopPropagation(); cycleWidgetSpan(wid); });
+    spanDiv.addEventListener('dragstart', e => e.stopPropagation());
+    ov.appendChild(spanDiv);
 
     if (wid === 'w-forecast') {
       const saved = _loadSavedLocation();
