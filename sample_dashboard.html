@@ -51,17 +51,19 @@ html,body{
   display:flex;flex-direction:column;gap:9px;padding:10px;
 }
 
-.dash-row{display:flex;gap:9px;flex-shrink:0}
-.dash-row .card{flex:1 1 0;min-width:0}
-.dash-row .card.span2{flex:2 1 0;min-width:0}
+.dash-row{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+
+.card.span2{grid-column:span 2}
+.card.span3{grid-column:span 3}
+.card.span4{grid-column:span 4}
 
 @media(max-width:900px){
-  .dash-row{flex-wrap:wrap}
-  .dash-row .card{flex:1 1 calc(50% - 5px)}
-  .dash-row .card.span2{flex:1 1 100%}
+  .dash-row{grid-template-columns:repeat(2,1fr)}
+  .card.span3,.card.span4{grid-column:span 2}
 }
 @media(max-width:480px){
-  .dash-row .card,.dash-row .card.span2{flex:1 1 100%}
+  .dash-row{grid-template-columns:1fr}
+  .card.span2,.card.span3,.card.span4{grid-column:span 1}
 }
 
 /* ── CARD ─────────────────────────────────────────────── */
@@ -339,6 +341,31 @@ html[data-theme="light"] body{background:#f0f2f8;color:#111}
 [data-theme="light"] .fc-lo{color:#0055bb}
 [data-theme="light"] .fc-prcp{color:#0055bb}
 [data-theme="light"] .fc-cond{color:#778}
+
+/* ── FORECAST LOCATION EDITOR (edit mode only) ────────── */
+.fc-edit-loc{
+  width:100%;padding:8px 16px 4px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.fc-edit-loc input{
+  width:100%;background:#0a0a14;border:1px solid #2a2a40;
+  color:#c8c8d8;font-family:'Courier New',Consolas,monospace;
+  font-size:11px;letter-spacing:1px;padding:6px 10px;
+  border-radius:2px;outline:none;text-align:center;
+}
+.fc-edit-loc input:focus{border-color:#4db8ff}
+.fc-edit-loc input::placeholder{color:#444460}
+.fc-edit-loc-row{display:flex;gap:6px;width:100%}
+.fc-edit-loc-row button{
+  flex:1;background:transparent;border:1px solid #2a2a40;color:#4db8ff;
+  font-family:'Courier New',Consolas,monospace;font-size:10px;
+  letter-spacing:2px;padding:5px 6px;border-radius:2px;cursor:pointer;
+  text-transform:uppercase;transition:border-color .15s,background .15s;
+}
+.fc-edit-loc-row button:hover{border-color:#4db8ff;background:#4db8ff14}
+.fc-edit-loc-row button.fc-clr-btn{color:#ff6060}
+.fc-edit-loc-row button.fc-clr-btn:hover{border-color:#ff6060;background:#ff606014}
+.fc-loc-status{font-size:9px;color:#6a6a88;letter-spacing:.5px;text-align:center}
 
 /* ── SAMPLE BANNER ────────────────────────────────────── */
 #sample-banner{
@@ -965,9 +992,9 @@ function build(cur, hist) {
 
     <!-- Row 6: 5-Day Forecast -->
     <div class="dash-row">
-    <div class="card" data-wid="w-forecast">
+    <div class="card span4" data-wid="w-forecast">
       <div class="ch hb">5-DAY FORECAST</div>
-      <div class="cs">Outdoor Forecast &middot; Open-Meteo &middot; Current Location</div>
+      <div class="cs">Sample Data &middot; Open-Meteo &middot; Mock Forecast</div>
       <div class="cb"><div class="no-data">&#9711; Loading forecast&#8230;</div></div>
     </div>
     </div><!-- end row 6 -->
