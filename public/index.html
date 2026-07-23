@@ -1391,18 +1391,24 @@ function loadSpans() {
 function saveSpans(s) { localStorage.setItem('wl-widget-spans', JSON.stringify(s)); }
 let wSpans = loadSpans();
 
+const DEFAULT_SPANS = {'w-forecast': 4};
+
+function _resolveSpan(wid) {
+  return wSpans[wid] != null ? wSpans[wid] : (DEFAULT_SPANS[wid] || 1);
+}
+
 function applyWidgetSpans() {
   for (const wid of Object.keys(WIDGET_NAMES)) {
     const card = document.querySelector(`[data-wid="${wid}"]`);
     if (!card) continue;
     card.classList.remove('span2','span3','span4');
-    const span = wSpans[wid] || 1;
+    const span = _resolveSpan(wid);
     if (span > 1) card.classList.add(`span${span}`);
   }
 }
 
 function cycleWidgetSpan(wid) {
-  const cur = wSpans[wid] || 1;
+  const cur = _resolveSpan(wid);
   wSpans[wid] = cur >= 4 ? 1 : cur + 1;
   saveSpans(wSpans);
   applyWidgetSpans();
@@ -1432,7 +1438,8 @@ function startCardResize(e, wid) {
   const card = document.querySelector(`[data-wid="${wid}"]`);
   const row  = card.parentElement;
   const rr   = row.getBoundingClientRect();
-  const gap = 9, cols = 4;
+  const gap  = 9;
+  const cols = getComputedStyle(row).gridTemplateColumns.split(' ').length;
   const colW = (rr.width - gap * (cols - 1)) / cols;
   const startLeft = card.getBoundingClientRect().left - rr.left;
   const startCol  = Math.round(startLeft / (colW + gap));
@@ -1477,7 +1484,7 @@ function _renderOverlays() {
       <div class="edit-ov-name">${WIDGET_NAMES[wid] || wid}</div>
       <div class="edit-ov-badge">${enabled ? '● ENABLED' : '○ DISABLED'}</div>`;
 
-    const _span = wSpans[wid] || 1;
+    const _span = _resolveSpan(wid);
     const spanDiv = document.createElement('div');
     spanDiv.className = 'edit-ov-span';
     spanDiv.innerHTML = `<span class="edit-ov-span-blocks">${'■'.repeat(_span)}${'□'.repeat(4-_span)}</span>`
@@ -1488,11 +1495,6 @@ function _renderOverlays() {
 
     if (wid === 'w-forecast') {
       const saved = _loadSavedLocation();
-      const locStatus = saved
-        ? `&#10003; ${saved.label}`
-        : (_cfgLat != null && _cfgLon != null && (_cfgLat !== 0 || _cfgLon !== 0))
-          ? 'Using config.json location'
-          : 'Using browser location';
       const locDiv = document.createElement('div');
       locDiv.className = 'fc-edit-loc';
       locDiv.innerHTML = `
@@ -1502,7 +1504,15 @@ function _renderOverlays() {
           <button onclick="setForecastLocation()">SET LOCATION</button>
           <button class="fc-clr-btn" onclick="clearForecastLocation()">CLEAR</button>
         </div>
-        <div id="fc-loc-status" class="fc-loc-status">${locStatus}</div>`;
+        <div id="fc-loc-status" class="fc-loc-status"></div>`;
+      const statusEl = locDiv.querySelector('#fc-loc-status');
+      if (saved) {
+        statusEl.textContent = `✓ ${saved.label}`;
+      } else if (_cfgLat != null && _cfgLon != null && (_cfgLat !== 0 || _cfgLon !== 0)) {
+        statusEl.textContent = 'Using config.json location';
+      } else {
+        statusEl.textContent = 'Using browser location';
+      }
       locDiv.addEventListener('click',     e => e.stopPropagation());
       locDiv.addEventListener('dragstart', e => e.stopPropagation());
       ov.appendChild(locDiv);
