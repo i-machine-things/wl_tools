@@ -719,10 +719,10 @@ function build(cur, hist) {
 
     </div><!-- end row 1 -->
 
-    <!-- ── Row 2: AQI today, 7-day AQI ── -->
+    <!-- ── Row 2: Charts ── -->
     <div class="dash-row">
 
-    <div class="card span2" data-wid="w-aqi-today">
+    <div class="card" data-wid="w-aqi-today">
       <div class="ch ht">AIR QUALITY INDEX — TODAY</div>
       <div class="cs">Hourly Trend &middot; PM2.5 AQI</div>
       <div class="cb">
@@ -732,7 +732,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    <div class="card span2" data-wid="w-aqi-7d">
+    <div class="card" data-wid="w-aqi-7d">
       <div class="ch hb">7-DAY AIR QUALITY INDEX</div>
       <div class="cs">Historical Trend &middot; AQI &amp; PM2.5</div>
       <div class="cb">
@@ -742,12 +742,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    </div><!-- end row 2 -->
-
-    <!-- ── Row 3: Temp today, 7-day temp/hum ── -->
-    <div class="dash-row">
-
-    <div class="card span2" data-wid="w-tmp-today">
+    <div class="card" data-wid="w-tmp-today">
       <div class="ch ha">TEMPERATURE TREND — TODAY</div>
       <div class="cs">Hourly &middot; &deg;F</div>
       <div class="cb">
@@ -757,7 +752,7 @@ function build(cur, hist) {
       </div>
     </div>
 
-    <div class="card span2" data-wid="w-tmphum">
+    <div class="card" data-wid="w-tmphum">
       <div class="ch hw">7-DAY TEMP &amp; HUMIDITY</div>
       <div class="cs">Historical &middot; &deg;F &amp; %RH</div>
       <div class="cb">
@@ -767,9 +762,9 @@ function build(cur, hist) {
       </div>
     </div>
 
-    </div><!-- end row 3 -->
+    </div><!-- end row 2 -->
 
-    <!-- ── Row 4: Heat index, Wet bulb, Wind, Solar/UV ── -->
+    <!-- ── Row 3: Heat index, Wet bulb, Wind, Solar/UV ── -->
     <div class="dash-row">
 
     <div class="card" data-wid="w-heat">
@@ -851,9 +846,9 @@ function build(cur, hist) {
       </div>
     </div>
 
-    </div><!-- end row 4 -->
+    </div><!-- end row 3 -->
 
-    <!-- ── Row 5: Pressure, Rainfall, AQI detail, Data status ── -->
+    <!-- ── Row 4: Pressure, Rainfall, AQI detail, Data status ── -->
     <div class="dash-row">
 
     <div class="card" data-wid="w-pressure">
@@ -931,16 +926,16 @@ function build(cur, hist) {
       </div>
     </div>
 
-    </div><!-- end row 5 -->
+    </div><!-- end row 4 -->
 
-    <!-- ── Row 6: 5-Day Forecast ── -->
+    <!-- ── Row 5: 5-Day Forecast ── -->
     <div class="dash-row">
-    <div class="card span4" data-wid="w-forecast">
+    <div class="card" data-wid="w-forecast">
       <div class="ch hb">5-DAY FORECAST</div>
       <div class="cs" id="fc-subtitle">Outdoor Forecast &middot; Open-Meteo &middot; Loading&#8230;</div>
       <div class="cb"><div class="no-data">&#9711; Loading forecast&#8230;</div></div>
     </div>
-    </div><!-- end row 6 -->
+    </div><!-- end row 5 -->
 
   `;
 
