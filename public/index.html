@@ -936,7 +936,7 @@ function build(cur, hist) {
     <div class="dash-row">
     <div class="card span4" data-wid="w-forecast">
       <div class="ch hb">5-DAY FORECAST</div>
-      <div class="cs">Outdoor Forecast &middot; Open-Meteo &middot; Current Location</div>
+      <div class="cs" id="fc-subtitle">Outdoor Forecast &middot; Open-Meteo &middot; Loading&#8230;</div>
       <div class="cb"><div class="no-data">&#9711; Loading forecast&#8230;</div></div>
     </div>
     </div><!-- end row 6 -->
@@ -1122,28 +1122,37 @@ async function _getCoords() {
   });
 }
 
+function _updateFcSubtitle(label) {
+  const sub = document.getElementById('fc-subtitle');
+  if (sub) sub.textContent = `Outdoor Forecast · Open-Meteo · ${label}`;
+}
+
 async function fetchForecast(cfgLat, cfgLon) {
   const el = document.querySelector('[data-wid="w-forecast"] .cb');
   if (!el) return;
 
   if (_fcCache && Date.now() - _fcCache.ts < 30 * 60 * 1000) {
+    _updateFcSubtitle(_fcCache.label);
     renderForecast(_fcCache.data);
     return;
   }
 
   try {
-    let lat, lon;
+    let lat, lon, locLabel;
     const saved = _loadSavedLocation();
     if (saved) {
       lat = saved.lat;
       lon = saved.lon;
+      locLabel = saved.label;
     } else if (cfgLat != null && cfgLon != null && (cfgLat !== 0 || cfgLon !== 0)) {
       lat = cfgLat;
       lon = cfgLon;
+      locLabel = 'Config Location';
     } else {
       const coords = await _getCoords();
       lat = coords.lat;
       lon = coords.lon;
+      locLabel = 'Current Location';
     }
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}`
       + `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max`
@@ -1151,7 +1160,8 @@ async function fetchForecast(cfgLat, cfgLon) {
     const res = await fetch(url);
     if (!res.ok) throw new Error('Forecast fetch failed');
     const data = await res.json();
-    _fcCache = {data, ts: Date.now()};
+    _fcCache = {data, ts: Date.now(), label: locLabel};
+    _updateFcSubtitle(locLabel);
     renderForecast(data);
   } catch(err) {
     if (el) el.innerHTML = `<div class="no-data">${err.message}</div>`;
