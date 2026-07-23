@@ -149,7 +149,7 @@ When a pull request is open or being prepared:
   1. If it matches an existing `.claude/S&P.md` entry — fix it immediately and reference the S&P entry in the commit message.
   2. If it is a new pattern — fix it, then append it to `.claude/S&P.md` in the standard format before committing.
 - Do not dismiss or ignore nitpicks — log them to `.claude/S&P.md` even if not immediately actionable.
-- Only merge a PR after all blocking comments are resolved.
+- Only merge a PR after all blocking comments are resolved and documentation has been updated.
 
 ### S&P.md Entry Format
 
