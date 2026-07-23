@@ -274,6 +274,22 @@ body.edit-mode #edit-btn{border-color:#00c8a0;color:#00c8a0;background:#00c8a015
 body.edit-mode .edit-ov{cursor:grab}
 body.edit-mode .edit-ov:active{cursor:grabbing}
 .edit-ov-grip{font-size:22px;opacity:.45;color:#4db8ff;margin-bottom:6px;line-height:1}
+
+/* ── RESIZE HANDLE ────────────────────────────────────── */
+.resize-handle{
+  position:absolute;top:0;bottom:0;right:0;
+  width:14px;cursor:col-resize;z-index:25;
+  display:none;align-items:center;justify-content:center;
+}
+body.edit-mode .resize-handle{display:flex}
+.resize-handle::after{
+  content:'';width:3px;height:36px;
+  background:#4db8ff;border-radius:2px;
+  opacity:.35;transition:opacity .15s;
+}
+.resize-handle:hover::after{opacity:.9}
+body.edit-mode.resizing *{user-select:none;cursor:col-resize!important}
+
 .edit-ov-span{
   display:flex;flex-direction:column;align-items:center;gap:3px;
   cursor:pointer;padding:3px 10px;margin-top:2px;
@@ -348,6 +364,7 @@ html[data-theme="light"] body{background:#f0f2f8;color:#111}
 [data-theme="light"] .edit-ov-span:hover{border-color:#0055bb;background:#0055bb10}
 [data-theme="light"] .edit-ov-span-blocks{color:#0055bb}
 [data-theme="light"] .edit-ov-span-label{color:#778}
+[data-theme="light"] .resize-handle::after{background:#0055bb}
 
 /* ── 5-DAY FORECAST ──────────────────────────────────── */
 .fc-grid{display:flex;justify-content:space-around;padding:8px 12px 14px;gap:8px}
@@ -1324,8 +1341,46 @@ function applyWidgetStates() {
   if (editMode) _renderOverlays();
 }
 
+function startCardResize(e, wid) {
+  e.preventDefault();
+  e.stopPropagation();
+  const card = document.querySelector(`[data-wid="${wid}"]`);
+  const row  = card.parentElement;
+  const rr   = row.getBoundingClientRect();
+  const gap = 9, cols = 4;
+  const colW = (rr.width - gap * (cols - 1)) / cols;
+  const startLeft = card.getBoundingClientRect().left - rr.left;
+  const startCol  = Math.round(startLeft / (colW + gap));
+  const maxSpan   = cols - startCol;
+  let curSpan = wSpans[wid] || 1;
+
+  document.body.classList.add('resizing');
+
+  const onMove = mv => {
+    const mx = mv.clientX - rr.left;
+    const col = Math.floor((mx - gap / 2) / (colW + gap));
+    const ns  = Math.max(1, Math.min(col - startCol + 1, maxSpan));
+    if (ns !== curSpan) {
+      curSpan = ns;
+      card.classList.remove('span2','span3','span4');
+      if (ns > 1) card.classList.add('span' + ns);
+    }
+  };
+  const onUp = () => {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.body.classList.remove('resizing');
+    wSpans[wid] = curSpan;
+    saveSpans(wSpans);
+    _renderOverlays();
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
 function _renderOverlays() {
   document.querySelectorAll('.edit-ov').forEach(el => el.remove());
+  document.querySelectorAll('.resize-handle').forEach(el => el.remove());
   document.querySelectorAll('[data-wid]').forEach(card => {
     const wid     = card.dataset.wid;
     const enabled = wStates[wid] !== false;
@@ -1405,6 +1460,13 @@ function _renderOverlays() {
     });
 
     card.appendChild(ov);
+
+    const rh = document.createElement('div');
+    rh.className = 'resize-handle';
+    rh.title = 'Drag to resize';
+    rh.addEventListener('mousedown', e => startCardResize(e, wid));
+    rh.addEventListener('click', e => e.stopPropagation());
+    card.appendChild(rh);
   });
 }
 
@@ -1462,6 +1524,7 @@ function toggleEditMode() {
     _renderOverlays();
   } else {
     document.querySelectorAll('.edit-ov').forEach(el => el.remove());
+    document.querySelectorAll('.resize-handle').forEach(el => el.remove());
   }
 }
 </script>
