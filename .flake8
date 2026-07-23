@@ -1,0 +1,9 @@
+[flake8]
+max-line-length = 120
+# Ignore pure style/whitespace issues in existing code:
+#   W191/E101 — tab indentation (wl_report.py uses tabs)
+#   E117       — over-indented (side-effect of tab/space mix)
+#   E221/E241  — alignment spaces in dict literals
+#   E302/E303/E305/E306 — blank-line counts
+#   W292/W293  — trailing whitespace / missing newline
+ignore = W191,E101,E117,E221,E241,E302,E303,E305,E306,W292,W293

@@ -6,7 +6,6 @@ Serves public/ as static files and provides a small read-only API:
   GET /api/history  — return last 7 days of logged data from LOGS/
 """
 
-import glob
 import json
 import os
 import threading
@@ -144,8 +143,10 @@ def _fetch_history(days=7):
     cutoff  = _local_now() - timedelta(days=days)
     records = []
     def _file_date(p):
-        try: return datetime.strptime(p.stem[len('weather_data_'):], '%b_%Y')
-        except ValueError: return datetime.min
+        try:
+            return datetime.strptime(p.stem[len('weather_data_'):], '%b_%Y')
+        except ValueError:
+            return datetime.min
     for fp in sorted(LOGS_DIR.glob('weather_data_*.json'), key=_file_date)[-3:]:
         try:
             records.extend(json.loads(fp.read_text()))
