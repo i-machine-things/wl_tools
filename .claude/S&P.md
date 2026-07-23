@@ -34,3 +34,22 @@ Format:
 3. **`saved.label` interpolated directly into `innerHTML`**
    - `saved.label` comes from Nominatim's `display_name` and could contain `<`/`>` characters
    - Fix: leave `#fc-loc-status` empty in innerHTML template, then set via `statusEl.textContent`
+
+## 2026-07-23 — `public/index.html` (resize curSpan, mock subtitle, err.message XSS)
+
+**Review:** CodeRabbit second-pass on PR #8 fixes commit
+**Result:** All three fixed
+
+### Findings
+
+1. **`startCardResize` initializes `curSpan` to 1, ignoring resolved default**
+   - `wSpans[wid] || 1` doesn't account for `DEFAULT_SPANS`; a click-without-drag on w-forecast persists span=1, collapsing the full-row card
+   - Fix: use `_resolveSpan(wid)` to initialise `curSpan`
+
+2. **Mock-mode `fetchForecast` doesn't update `#fc-subtitle`**
+   - Subtitle would stay "Loading…" indefinitely when in mock mode
+   - Fix: call `_updateFcSubtitle('Sample Data')` before `renderForecast(MOCK_FORECAST)`
+
+3. **`err.message` interpolated into `innerHTML` in connection error block**
+   - API error messages are untrusted and could contain HTML
+   - Fix: set innerHTML without the message, then write via `document.getElementById('err-msg').textContent`

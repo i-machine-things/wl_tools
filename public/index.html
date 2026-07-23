@@ -1166,7 +1166,7 @@ async function fetchForecast(cfgLat, cfgLon) {
   const el = document.querySelector('[data-wid="w-forecast"] .cb');
   if (!el) return;
 
-  if (_mockMode) { renderForecast(MOCK_FORECAST); return; }
+  if (_mockMode) { _updateFcSubtitle('Sample Data'); renderForecast(MOCK_FORECAST); return; }
 
   if (_fcCache && Date.now() - _fcCache.ts < 30 * 60 * 1000) {
     _updateFcSubtitle(_fcCache.label);
@@ -1317,14 +1317,16 @@ async function refresh() {
   } catch(err) {
     console.error(err);
     if (_hasRealData) {
-      document.getElementById('dash').innerHTML = `
+      const dash = document.getElementById('dash');
+      dash.innerHTML = `
         <div class="card span4">
           <div class="ch hr">CONNECTION ERROR</div>
           <div class="cb err-box">
-            ${err.message}<br><br>
+            <span id="err-msg"></span><br><br>
             Check API credentials in config.json and ensure the station ID is set.
           </div>
         </div>`;
+      document.getElementById('err-msg').textContent = err.message;
     } else {
       _showSampleBadge('NO CONNECTION', true);
     }
@@ -1444,7 +1446,7 @@ function startCardResize(e, wid) {
   const startLeft = card.getBoundingClientRect().left - rr.left;
   const startCol  = Math.round(startLeft / (colW + gap));
   const maxSpan   = cols - startCol;
-  let curSpan = wSpans[wid] || 1;
+  let curSpan = _resolveSpan(wid);
 
   document.body.classList.add('resizing');
 
