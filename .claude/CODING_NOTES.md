@@ -1,5 +1,7 @@
 # Coding Notes — wl_tools
 
+> **Style rule:** Notes must be clear and concise — 300 characters or less each. Group by topic, not by date. Whenever a PR review (CodeRabbit or human) catches a mistake, add or amend a note here right away so it isn't repeated.
+
 ## Dashboard architecture
 
 `public/index.html` is a single-file SPA. All CSS, JS, and HTML are inline — no build step, no bundler. This is intentional: the file is served directly by Python's `SimpleHTTPRequestHandler` with zero dependencies beyond Chart.js (CDN).
@@ -25,6 +27,16 @@ Each dashboard card has a `data-wid` attribute (e.g. `w-temp`, `w-forecast`). Wi
 2. Add an entry to `WIDGET_NAMES` in `index.html`
 3. Ensure it appears in a `<div class="dash-row">` so the edit/drag system picks it up
 
+**Resolve widget spans via `_resolveSpan(wid)`, never `wSpans[wid] || 1`.** Only the helper honors `DEFAULT_SPANS` (e.g. `w-forecast` = 4); use it in `applyWidgetSpans`, `cycleWidgetSpan`, resize `curSpan` init, and span indicators, or defaults get lost.
+
+**Derive resize column count from the grid, not a hardcoded literal.** `startCardResize` should read `getComputedStyle(row).gridTemplateColumns.split(' ').length` at drag start — responsive breakpoints use 2 or 1 columns, so a fixed `cols = 4` breaks resize math.
+
 ## 5-day forecast
 
 Uses the Open-Meteo API (free, no key). Requires browser geolocation permission. Responses are cached in `_fcCache` for 30 minutes to avoid re-fetching on every 5-minute dashboard refresh.
+
+**Mock mode must still update UI state.** When `fetchForecast` short-circuits to `MOCK_FORECAST`, call `_updateFcSubtitle('Sample Data')` first, or `#fc-subtitle` stays stuck on "Loading…".
+
+## Security (XSS)
+
+**Never interpolate untrusted strings into `innerHTML`.** Geolocation labels (Nominatim `display_name`) and API `err.message` can contain `<`/`>`; leave the target element empty in the template and set text via `.textContent` instead.
