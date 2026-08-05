@@ -382,6 +382,7 @@ html[data-theme="light"] body{background:#f0f2f8;color:#111}
 .fc-hi{font-size:18px;font-weight:bold;color:#ffaa00}
 .fc-lo{font-size:13px;color:#4db8ff;margin-left:5px}
 .fc-prcp{font-size:9px;color:#4db8ff;margin-top:5px;letter-spacing:.5px}
+.fc-wind{font-size:9px;color:#a8a8c0;margin-top:3px;letter-spacing:.5px}
 .fc-cond{font-size:9px;color:#9090a8;margin-top:3px;letter-spacing:.5px}
 @media(max-width:480px){.fc-cond{display:none}}
 [data-theme="light"] .fc-day{background:#f0f4ff;border-color:#d0d4e8}
@@ -389,6 +390,7 @@ html[data-theme="light"] body{background:#f0f2f8;color:#111}
 [data-theme="light"] .fc-hi{color:#bb6600}
 [data-theme="light"] .fc-lo{color:#0055bb}
 [data-theme="light"] .fc-prcp{color:#0055bb}
+[data-theme="light"] .fc-wind{color:#667}
 [data-theme="light"] .fc-cond{color:#778}
 
 /* ── FORECAST LOCATION EDITOR (edit mode only) ────────── */
@@ -1192,7 +1194,7 @@ async function fetchForecast(cfgLat, cfgLon) {
       locLabel = 'Current Location';
     }
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}`
-      + `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max`
+      + `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,winddirection_10m_dominant`
       + `&temperature_unit=fahrenheit&timezone=auto&forecast_days=5`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('Forecast fetch failed');
@@ -1217,12 +1219,14 @@ function renderForecast(data) {
     const hi   = Math.round(days.temperature_2m_max[i]);
     const lo   = Math.round(days.temperature_2m_min[i]);
     const prcp = days.precipitation_probability_max[i];
+    const wdir = days.winddirection_10m_dominant ? days.winddirection_10m_dominant[i] : null;
     return `
       <div class="fc-day">
         <div class="fc-day-name">${name}</div>
         <span class="fc-icon">${WMO_ICON[wmo] || '?'}</span>
         <div><span class="fc-hi">${hi}°</span><span class="fc-lo">${lo}°</span></div>
         <div class="fc-prcp">&#128167; ${prcp != null ? prcp+'%' : '—'}</div>
+        <div class="fc-wind">&#128168; ${fmtDir(wdir)}</div>
         <div class="fc-cond">${WMO_DESC[wmo] || ''}</div>
       </div>`;
   }).join('');
@@ -1266,6 +1270,7 @@ const MOCK_FORECAST = {
     temperature_2m_max:[78,72,68,74,81],
     temperature_2m_min:[61,58,55,59,63],
     precipitation_probability_max:[10,35,80,25,5],
+    winddirection_10m_dominant:[225,270,190,310,45],
   }
 };
 
