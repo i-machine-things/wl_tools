@@ -504,6 +504,13 @@ function fmtDir(deg) {
                 'S','SSW','SW','WSW','W','WNW','NW','NNW'];
   return dirs[Math.round(deg / 22.5) % 16];
 }
+const DIR8 = ['N','NE','E','SE','S','SW','W','NW'];
+const DIR8_ARROWS = ['&#8593;','&#8599;','&#8594;','&#8600;','&#8595;','&#8601;','&#8592;','&#8598;'];
+function fmtDir8(deg) {
+  if (deg == null) return '—';
+  const idx = Math.round(deg / 45) % 8;
+  return `${DIR8_ARROWS[idx]} ${DIR8[idx]}`;
+}
 
 /* ═══════════════════════════════════════════════════════════
    CLOCK
@@ -1194,8 +1201,8 @@ async function fetchForecast(cfgLat, cfgLon) {
       locLabel = 'Current Location';
     }
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}`
-      + `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,winddirection_10m_dominant`
-      + `&temperature_unit=fahrenheit&timezone=auto&forecast_days=5`;
+      + `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,winddirection_10m_dominant,windspeed_10m_max`
+      + `&temperature_unit=fahrenheit&windspeed_unit=kn&timezone=auto&forecast_days=5`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('Forecast fetch failed');
     const data = await res.json();
@@ -1220,13 +1227,14 @@ function renderForecast(data) {
     const lo   = Math.round(days.temperature_2m_min[i]);
     const prcp = days.precipitation_probability_max[i];
     const wdir = days.winddirection_10m_dominant ? days.winddirection_10m_dominant[i] : null;
+    const wspd = days.windspeed_10m_max ? days.windspeed_10m_max[i] : null;
     return `
       <div class="fc-day">
         <div class="fc-day-name">${name}</div>
         <span class="fc-icon">${WMO_ICON[wmo] || '?'}</span>
         <div><span class="fc-hi">${hi}°</span><span class="fc-lo">${lo}°</span></div>
         <div class="fc-prcp">&#128167; ${prcp != null ? prcp+'%' : '—'}</div>
-        <div class="fc-wind">&#128168; ${fmtDir(wdir)}</div>
+        <div class="fc-wind">${fmtDir8(wdir)} ${wspd != null ? Math.round(wspd)+'kt' : ''}</div>
         <div class="fc-cond">${WMO_DESC[wmo] || ''}</div>
       </div>`;
   }).join('');
@@ -1271,6 +1279,7 @@ const MOCK_FORECAST = {
     temperature_2m_min:[61,58,55,59,63],
     precipitation_probability_max:[10,35,80,25,5],
     winddirection_10m_dominant:[225,270,190,310,45],
+    windspeed_10m_max:[8,14,19,6,4],
   }
 };
 

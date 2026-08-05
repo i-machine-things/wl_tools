@@ -8,7 +8,7 @@ A Python suite that polls the Davis WeatherLink API v2, logs readings to CSV/JSO
 
 - **Live dashboard** — dark/light theme, auto-refreshes every 5 minutes, shows sample data instantly before the API responds
 - **4-column responsive grid** — drag widgets to reorder, drag their right edge to resize (1–4 columns), hide/show per widget, all persisted to `localStorage`
-- **5-day forecast** — Open-Meteo (no API key), uses config lat/lon, browser geolocation, or a city/ZIP you type in edit mode; each day shows high/low, precipitation chance, and dominant wind direction
+- **5-day forecast** — Open-Meteo (no API key), uses config lat/lon, browser geolocation, or a city/ZIP you type in edit mode; each day shows high/low, precipitation chance, and dominant wind direction (arrow + compass point) with peak speed in knots
 - **Data logging** — CSV + JSON per month, stored in `LOGS/`
 - **Daily email report** — sends a summary and CSV attachment via SMTP/Gmail
 - **CI** — flake8 lint + bandit security scan on every push
