@@ -37,6 +37,8 @@ Uses the Open-Meteo API (free, no key). Requires browser geolocation permission.
 
 **Mock mode must still update UI state.** When `fetchForecast` short-circuits to `MOCK_FORECAST`, call `_updateFcSubtitle('Sample Data')` first, or `#fc-subtitle` stays stuck on "Loading…".
 
+**Use Open-Meteo's underscored daily field names** (`wind_direction_10m_dominant`, `wind_speed_10m_max`), not the legacy unspaced form (`winddirection_10m_dominant`, `windspeed_10m_max`). Both work today, but underscored is the documented current API — CodeRabbit PR #12 flagged the legacy form.
+
 ## Security (XSS)
 
 **Never interpolate untrusted strings into `innerHTML`.** Geolocation labels (Nominatim `display_name`) and API `err.message` can contain `<`/`>`; leave the target element empty in the template and set text via `.textContent` instead.

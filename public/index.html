@@ -1202,7 +1202,7 @@ async function fetchForecast(cfgLat, cfgLon) {
       locLabel = 'Current Location';
     }
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}`
-      + `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,winddirection_10m_dominant,windspeed_10m_max`
+      + `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_direction_10m_dominant,wind_speed_10m_max`
       + `&temperature_unit=fahrenheit&windspeed_unit=kn&timezone=auto&forecast_days=5`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('Forecast fetch failed');
@@ -1227,8 +1227,8 @@ function renderForecast(data) {
     const hi   = Math.round(days.temperature_2m_max[i]);
     const lo   = Math.round(days.temperature_2m_min[i]);
     const prcp = days.precipitation_probability_max[i];
-    const wdir = days.winddirection_10m_dominant ? days.winddirection_10m_dominant[i] : null;
-    const wspd = days.windspeed_10m_max ? days.windspeed_10m_max[i] : null;
+    const wdir = days.wind_direction_10m_dominant ? days.wind_direction_10m_dominant[i] : null;
+    const wspd = days.wind_speed_10m_max ? days.wind_speed_10m_max[i] : null;
     return `
       <div class="fc-day">
         <div class="fc-day-name">${name}</div>
@@ -1279,8 +1279,8 @@ const MOCK_FORECAST = {
     temperature_2m_max:[78,72,68,74,81],
     temperature_2m_min:[61,58,55,59,63],
     precipitation_probability_max:[10,35,80,25,5],
-    winddirection_10m_dominant:[225,270,190,310,45],
-    windspeed_10m_max:[8,14,19,6,4],
+    wind_direction_10m_dominant:[225,270,190,310,45],
+    wind_speed_10m_max:[8,14,19,6,4],
   }
 };
 
