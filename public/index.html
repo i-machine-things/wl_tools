@@ -509,7 +509,8 @@ const DIR8_ARROWS = ['&#8593;','&#8599;','&#8594;','&#8600;','&#8595;','&#8601;'
 function fmtDir8(deg) {
   if (deg == null) return '—';
   const idx = Math.round(deg / 45) % 8;
-  return `${DIR8_ARROWS[idx]} ${DIR8[idx]}`;
+  const arrowIdx = (idx + 4) % 8; // arrow shows downwind travel; label stays source direction
+  return `${DIR8_ARROWS[arrowIdx]} ${DIR8[idx]}`;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1234,7 +1235,7 @@ function renderForecast(data) {
         <span class="fc-icon">${WMO_ICON[wmo] || '?'}</span>
         <div><span class="fc-hi">${hi}°</span><span class="fc-lo">${lo}°</span></div>
         <div class="fc-prcp">&#128167; ${prcp != null ? prcp+'%' : '—'}</div>
-        <div class="fc-wind">${fmtDir8(wdir)} ${wspd != null ? Math.round(wspd)+'kt' : ''}</div>
+        <div class="fc-wind">${wspd != null ? Math.round(wspd)+' kt' : '—'} ${fmtDir8(wdir)}</div>
         <div class="fc-cond">${WMO_DESC[wmo] || ''}</div>
       </div>`;
   }).join('');
