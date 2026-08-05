@@ -39,7 +39,11 @@ Uses the Open-Meteo API (free, no key). Requires browser geolocation permission.
 
 **Use Open-Meteo's underscored daily field names** (`wind_direction_10m_dominant`, `wind_speed_10m_max`), not the legacy unspaced form (`winddirection_10m_dominant`, `windspeed_10m_max`). Both work today, but underscored is the documented current API — CodeRabbit PR #12 flagged the legacy form.
 
-**Forecast sky icons come from Meteocons** (`WMO_ICON_FILE` maps Open-Meteo's WMO weather code to a filename, fetched from `METEOCONS_BASE` = jsDelivr's npm CDN pinned to `@meteocons/svg@0.1.0`, `fill` style). Deliberately pinned to the stable published npm version, not meteocons.com's own CDN, which serves an unpinned `3.0.0-next.*` prerelease tag that could change without notice. If more WMO codes are added, verify the filename exists in that version's `fill/` folder before using it (`https://cdn.jsdelivr.net/npm/@meteocons/svg@0.1.0/fill/<name>.svg` should 200).
+**Forecast sky icons come from Meteocons.** `WMO_ICON_FILE` maps Open-Meteo's WMO weather code to an SVG filename, fetched from `METEOCONS_BASE`, `fill` style.
+
+**`METEOCONS_BASE` is jsDelivr's npm CDN pinned to `@meteocons/svg@0.1.0`.** Deliberately not meteocons.com's own CDN, which serves an unpinned `3.0.0-next.*` prerelease tag that could change without notice.
+
+**Adding a new WMO code?** Verify the filename exists in that version's `fill/` folder first — `https://cdn.jsdelivr.net/npm/@meteocons/svg@0.1.0/fill/<name>.svg` should return 200.
 
 ## Security (XSS)
 
